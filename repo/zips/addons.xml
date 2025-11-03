@@ -17,7 +17,7 @@
             <icon>icon.png</icon>
         </assets>
     </extension>
-</addon><addon id="repository.bumbac" version="1.0.0" name="Kodi BumBac Repository" provider-name="BumBac">
+</addon><addon id="repository.bumbac" version="1.0.0" name="[COLOR cyan]BumBac[/COLOR] Repository" provider-name="BumBac">
   <extension point="xbmc.addon.repository" name="Kodi BumBac Repository">
     <dir minversion="18.9.0">
 		<info compressed="false">https://raw.githubusercontent.com/andriman/repository.bumbac/refs/heads/master/repo/zips/addons.xml</info>
