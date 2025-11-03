@@ -23,7 +23,7 @@ def tmdb_episodes(_handle, _url, sname, params):
     html = urlopen(
         'https://api.themoviedb.org/3/tv/' + type + '/season/' + ses_num + '?api_key=1f0150a5f78d4adc2407911989fdb66c').read()
     res = json.loads(html)
-    dprint(f'tmdb_episodes(): ' + str(res))
+    #dprint(f'tmdb_episodes(): ' + str(res))
 
     for category in res['episodes']:
         if not category['name']: category['name'] = "Neznámo"
@@ -94,8 +94,8 @@ def tmdb_episodes(_handle, _url, sname, params):
 
             list_item.setInfo('video', videoInfo)
 
-            dprint("tmdb_episodes(): " + str(category))
-            dprint("tmdb_episodes(): " + str(videoInfo))
+            #dprint("tmdb_episodes(): " + str(category))
+            #dprint("tmdb_episodes(): " + str(videoInfo))
 
             # Set cast thumbnails if available
             # if main_cast:

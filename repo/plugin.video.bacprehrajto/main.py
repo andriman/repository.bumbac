@@ -5,9 +5,9 @@ import os
 import sys
 import time
 from typing import List, Optional, Tuple
-from urllib.parse import quote, urlparse, parse_qsl, unquote
-from urllib.request import urlopen
+from urllib.parse import quote, parse_qsl, unquote
 from urllib.parse import urlparse
+from urllib.request import urlopen
 
 import requests
 import unicodedata
@@ -18,7 +18,8 @@ import xbmcplugin
 import xbmcvfs
 from bs4 import BeautifulSoup
 
-from common import _ADDON_ID, addon, max_searched_vids, truncate_titles, download_path, quality_selector, history_path, \
+from common import _ADDON_ID, addon, g_max_searched_vids, g_truncate_titles, g_download_path, g_quality_selector, \
+    history_path, \
     headers, cache_path
 from model.StreamData import StreamData
 from model.SubData import SubData
@@ -27,7 +28,7 @@ from tmdb.tmdb import tmdb_episodes, tmdb_seasons, tmdb_serie, tmdb_movie, tmdb_
     genres_category, tmdb_year, years_category, search_tmdb, movie_category, serie_category
 from utils.ClipboardUtils import ClipboardUtils
 from utils.utils import truncate_middle, notify_file_size, dprint, \
-    convert_size, urlencode, find_pattern, find_pattern_groups, format_eta, format_eta_and_finish
+    convert_size, urlencode, find_pattern, find_pattern_groups, format_eta_and_finish
 
 _url = sys.argv[0]
 _handle = int(sys.argv[1])
@@ -105,7 +106,7 @@ def get_premium_link(link):
 def play_video(link, force_selector=False):
     dprint(f'play_video(): force_selector: ' + str(force_selector) + ', quality_selector = 0')
 
-    if quality_selector == "1" and force_selector == False:  # Premium.
+    if g_quality_selector == "1" and force_selector == False:  # Premium.
         file = get_premium_link(link)
         notify_file_size(file)
         listitem = xbmcgui.ListItem(path=file)
@@ -122,7 +123,7 @@ def play_video(link, force_selector=False):
         if streams is None or len(streams) == 0:
             return
 
-        if quality_selector == "0" and force_selector == False:  # Max Compressed
+        if g_quality_selector == "0" and force_selector == False:  # Max Compressed
 
             # Find the highest quality stream (compressed)
             file = streams[0].path
@@ -147,7 +148,7 @@ def play_video(link, force_selector=False):
             # listitem.setInfo('video', video_info)
 
             xbmcplugin.setResolvedUrl(_handle, True, listitem)
-        elif quality_selector == "2" or force_selector:  # Selector
+        elif g_quality_selector == "2" or force_selector:  # Selector
             selected_file, is_premium = open_stream_selector(link, streams)
 
             if selected_file is None:
@@ -231,6 +232,17 @@ def history():
     xbmcplugin.endOfDirectory(_handle)
 
 
+# Expecting 01:54:22 or 00:54:41
+def crop_time(time_str: str) -> str:
+    if len(time_str) != 8:
+        return time_str
+
+    split_time = time_str.split(':')
+    if split_time[0] != "00":
+        return time_str
+
+    return split_time[1] + ':' + split_time[2]
+
 def search(name, params=None):
     if name == "None":
         kb = xbmc.Keyboard("", 'Zadejte název filmu nebo seriálu')
@@ -244,6 +256,7 @@ def search(name, params=None):
         q = encode(name)
 
     dprint(f'Search(): ' + q)
+
     if os.path.exists(history_path):
         lh = open(history_path, "r").read().splitlines()
         if q not in lh:
@@ -258,19 +271,44 @@ def search(name, params=None):
         f = open(history_path, "w")
         f.write(q)
         f.close()
+
+    max_pages_to_browse = 5
     p = 1
     videos = []
     duplicities_set = []
     premium = 0
+
+    p_dialog_step = int(100 / g_max_searched_vids)
+    p_dialog = xbmcgui.DialogProgress()
+    p_dialog.create("Přehraj.to", "Hledám video soubory...")
+    p_dialog.update(
+        int(len(videos) * p_dialog_step),
+        "Strana:         " + str(p) + "\n"
+        "Video souborů:  " + str(len(videos)) + "\n"
+    )
+
     if addon.getSetting("email") and len(addon.getSetting("email")) > 0:
         premium, cookies = get_premium()
-    while True:
+
+    stop_searching = False
+    while not (stop_searching or p_dialog.iscanceled()):
         dprint('search(): processing page: ' + str(p))
+
+        if p > 1:
+            xbmc.Monitor().waitForAbort(3)
+
         if premium == 1:
             html = requests.get('https://prehraj.to:443/hledej/' + quote(q) + '?vp-page=' + str(p),
                                 cookies=cookies).content
         else:
             html = requests.get('https://prehraj.to:443/hledej/' + quote(q) + '?vp-page=' + str(p)).content
+
+        p_dialog.update(
+            int(len(videos) * p_dialog_step),
+            "Strana:         " + str(p) + "\n"
+            "Video souborů:  " + str(len(videos)) + "\n"
+        )
+
         soup = BeautifulSoup(html, "html.parser")
         title = soup.find_all('h3', attrs={'class': 'video__title'})
         size = soup.find_all('div', attrs={'class': 'video__tag--size'})
@@ -279,35 +317,54 @@ def search(name, params=None):
         # next = soup.find_all('div',{'class': 'pagination-more'})
         next = soup.find_all('a', {'title': 'Zobrazit další'})
 
+        dprint('search(): titles: ' + str(title))
+
         for t, s, l, m in zip(title, size, link, time):
-            duplicity_name = t.text + " (" + s.text + " - " + m.text + ")"
-            if not duplicities_set.__contains__(duplicity_name):
-                final_title = t.text
-                if truncate_titles:
+
+            if t is None:
+                dprint('search(): Fuckup..')
+                continue
+
+            t = t.text.strip()
+            s = s.text.strip()
+            m = crop_time(m.text.strip())
+
+            pot_dupl_name = t + " (" + s + " - " + m + ")"
+
+            if not duplicities_set.__contains__(pot_dupl_name):
+                final_title = t
+                if g_truncate_titles:
                     final_title = truncate_middle(final_title)
+
+                dprint('search(): final title: ' + final_title)
                 videos.append(
                     (
                         final_title,
-                        " (" + s.text + " - " + m.text + ")",
+                        ' (' + s + " - " + m + ')',
                         'https://prehraj.to:443' + l['href'],
-                        t.text
+                        t
                     )
                 )
-                duplicities_set.append(t.text + " (" + s.text + " - " + m.text + ")")
+
+                duplicities_set.append(pot_dupl_name)
             else:
-                dprint('search(): duplicity: ' + duplicity_name)
+                dprint('search(): duplicity: ' + pot_dupl_name)
 
         p = p + 1
-        if next == [] or len(videos) > int(max_searched_vids):
-            break
+
+        stop_searching = next == [] or len(videos) >= int(g_max_searched_vids) or p == max_pages_to_browse
+
+    p_dialog.close()
     if not videos:
         xbmcgui.Dialog().notification("Přehraj.to", "Nenalezeno:\r\n" + q, xbmcgui.NOTIFICATION_INFO, 4000, sound=False)
+        # TODO - possibly let user change the searched string.
         return
+
     xbmcplugin.setContent(_handle, 'videos')
 
     dprint('search(): found: ' + str(len(videos)))
-    for category in videos[:int(max_searched_vids)]:
-        dprint('search(): found item: ' + str(category))
+    for category in videos[:int(g_max_searched_vids)]:
+        #dprint('search(): found item: ' + str(category))
         list_item = xbmcgui.ListItem(label=category[0] + category[1])
 
         if params is not None and len(params) > 0:
@@ -399,7 +456,7 @@ def get_name_ext(download_url: str, content: bytes) -> Tuple[Optional[str], Opti
 
 def download_subtitles(
         subs: Optional[List[SubData]], name_wo_ext: str,
-        use_name_as_subfolder: bool = False, path: str = download_path
+        use_name_as_subfolder: bool = False, path: str = g_download_path
 ) -> Optional[List[str]]:
     if subs is None or len(subs) == 0:
         return None
@@ -431,7 +488,7 @@ def delete_subtitles(
         subs: List[SubData], name_wo_ext: str,
         use_name_as_subfolder: bool = False,
         all_except_name: bool = False,
-        path: str = download_path
+        path: str = g_download_path
 ):
     if subs is None or len(subs) == 0:
         return
@@ -500,7 +557,7 @@ def download(download_url: str) -> None:
     download_subtitles(subs, name_wo_ext)
 
     # Prepare video download file.
-    download_file_path = download_path + name
+    download_file_path = g_download_path + name
     u = urlopen(file)
     f = open(download_file_path, "wb")
     file_size = int(u.getheader("Content-Length"))

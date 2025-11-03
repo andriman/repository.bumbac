@@ -10,11 +10,11 @@ import xbmcaddon
 import xbmcgui
 import xbmcplugin
 
-from common import is_debug_logs_enabled
+from common import g_is_debug_logs_enabled
 from model.SubData import SubData
 
 def dprint(text):
-    if is_debug_logs_enabled:
+    if g_is_debug_logs_enabled:
         print(text)
 
 def truncate_middle(s, n=50):

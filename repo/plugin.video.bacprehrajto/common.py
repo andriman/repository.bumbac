@@ -10,12 +10,12 @@ _ADDON_ID = 'plugin.video.bacprehrajto'
 addon = xbmcaddon.Addon(id=_ADDON_ID)
 
 ### SETTINGS
-is_debug_logs_enabled = addon.getSetting("is_debug_logs_enabled")
-max_searched_vids = addon.getSetting("ls")
-max_duplicities = addon.getSettings("max_duplicities")
-truncate_titles = addon.getSettings("truncate_titles")
-download_path = addon.getSetting("download")
-quality_selector = addon.getSetting("quality_selector") # 0 - CompressedHighest, 1 - Premium, 2 - Selector
+g_is_debug_logs_enabled = addon.getSetting("is_debug_logs_enabled")
+g_max_searched_vids = int(addon.getSetting("ls"))
+g_max_duplicities = int(addon.getSetting("max_duplicities"))
+g_truncate_titles = addon.getSetting("truncate_titles")
+g_download_path = addon.getSetting("download")
+g_quality_selector = addon.getSetting("quality_selector") # 0 - CompressedHighest, 1 - Premium, 2 - Selector
 
 ### PATHs
 translated_path = xbmcvfs.translatePath('special://home/addons/' + _ADDON_ID)

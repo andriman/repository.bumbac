@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import xbmc
-xbmc.executebuiltin('ShowPicture('+ 'http://saros.wz.cz/repo/PayPal_my_qrcode.jpg'+')')
+
+# TODO.
+qr_address = ''
+xbmc.executebuiltin('ShowPicture('+qr_address+')')
