@@ -5,13 +5,60 @@
         <setting label="Maximum duplicit" type="number" id="max_duplicities" default="2"/>
         <setting label="Výběr kvality" type="enum" id="quality_selector" values="Komprimovaná|Max|Vybrat" default="Komprimovaná"/>
         <setting label="Zkrátit název titulu odprostřed" type="bool" id="truncate_titles"/>
-        <setting label="Složka pro stahování" type="folder" id="download" default =""/>
+        <setting label="Zvýraznit pravděpodobně falešné streamy (nahrání před vysíláním)" type="bool" id="highlight_fake_streams" default="false"/>
         <setting label="Složka pro knihovnu" type="folder" id="library" default =""/>
-        <setting label="Povolit logování" type="bool" id="is_debug_logs_enabled" default="false"/>
+        <setting label="Rozbalit akce v kontextové nabídce" type="bool" id="unpack_context_menu" default="false"/>
 	</category>
-	<category label="Premium účet">
+	<category label="Stahování">
+        <setting label="Složka pro stahování" type="folder" id="download" default=""/>
+        <setting label="Maximum současných stahování" type="number" id="download_max_simultaneous" default="1"/>
+        <setting label="Prehraj.to" type="lsep"/>
+        <setting label="Povolit více souběžných stahování" type="bool" id="prehrajto_allow_parallel_downloads" default="false"/>
+        <setting label="Stáhnout premium titulky u nižší kvality" type="bool" id="prehrajto_premium_subtitles" default="false"/>
+        <setting label="Premium titulky pouze pokud stránka nemá titulky" type="bool" id="prehrajto_premium_subs_if_none" default="true" enable="eq(-1,true)"/>
+        <setting label="Sledujteto.cz" type="lsep"/>
+        <setting label="Povolit více souběžných stahování" type="bool" id="sledujteto_allow_parallel_downloads" default="false"/>
+	</category>
+	<category label="Zdroje">
+        <setting id="is_provider_prehrajto_enabled" type="bool" label="Přehraj.to" default="true" />
+        <setting label="Doména Prehraj.to" type="enum" id="prehrajto_domain" values="prehrajto.cz|prehraj.to" default="prehrajto.cz" enable="eq(-1,true)"/>
+        <setting id="is_provider_sledujteto_enabled" type="bool" label="Sledujteto.cz" default="true" />
+	</category>
+	<category label="NSFW">
+        <setting id="developer_password" type="text" default="" visible="false"/>
+        <setting id="is_nsfw_enabled" type="bool" label="Include NSFW videos" default="false" visible="eq(-1,bumbacpass)"/>
+        <setting id="nsfw_filter_keywords" type="text" label="Další filtry (oddělené čárkou)" default="" visible="eq(-2,bumbacpass)"/>
+	</category>
+	<category label="Accounts">
+        <setting label="Prehraj.to" type="lsep"/>
         <setting label="Email" type="text" id="email" default=""/>
         <setting label="Heslo" type="text" id="password" option="hidden" default=""/>
+        <setting label="Přihlásit automaticky" type="bool" id="prehrajto_auto_login" default="true"/>
+        <setting label="Sledujteto.cz" type="lsep"/>
+        <setting label="Email" type="text" id="sledujteto_email" default=""/>
+        <setting label="Heslo" type="text" id="sledujteto_password" option="hidden" default=""/>
+        <setting label="Přihlásit automaticky" type="bool" id="sledujteto_auto_login" default="true"/>
+	</category>
+	<category label="Requests">
+        <setting label="Prodleva mezi stránkami hledání (s, 0 = vypnuto)" type="number" id="search_page_delay" default="3"/>
+        <setting label="Maximum stránek hledání" type="number" id="search_max_pages" default="20"/>
+	</category>
+	<category label="User-Agent">
+        <setting label="Předvolba User-Agent" type="enum" id="user_agent_preset" values="Firefox (Windows)|Firefox (Linux)|Chrome (Windows)|Chrome (macOS)|Chrome (Android)|Safari (iOS)|Edge (Windows)" default="Firefox (Windows)"/>
+        <setting label="Vlastní User-Agent" type="bool" id="user_agent_override" default="false"/>
+        <setting label="User-Agent" type="text" id="user_agent" default="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0" enable="eq(-1,true)"/>
+	</category>
+	<category label="Cache">
+        <setting label="Cache hledání (minuty, 0 = vypnuto; návrat z přehrávání vždy z cache)" type="number" id="search_cache_ttl" default="5"/>
+        <setting type="lsep" label="Cache titulků (přehrávání)"/>
+        <setting label="Velikost cache titulků" type="text" id="subtitle_cache_size_info" default="0 B (0 souborů)" enable="false"/>
+        <setting label="Vymazat cache titulků" type="action" action="RunScript(special://home/addons/plugin.video.bacprehrajto/subtitle_cache_manage.py,clear)" option="close"/>
+	</category>
+	<category label="Debug">
+        <setting label="Debug info" type="bool" id="is_debug_info_on" default ="false"/>
+        <setting label="Povolit logování" type="bool" id="is_debug_logs_enabled" default="false"/>
+        <setting label="Developer password" type="text" id="developer_password" option="hidden" default=""/>
+        <setting id="developer_mode_notice" type="text" label="Developer features enabled" default="Ano" enable="false" visible="eq(-1,bumbacpass)"/>
 	</category>
   <category label="Donate">
     <setting id="paypal" type="action" label="PayPal" option="close" action="RunScript(special://home/addons/plugin.video.bacprehrajto/donate.py)" />

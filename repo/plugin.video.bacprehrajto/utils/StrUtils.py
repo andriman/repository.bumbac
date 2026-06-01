@@ -75,21 +75,53 @@ def find_pattern_groups(source, pattern):
     return result
 
 
-def get_file_size_human_readable(file_path: str, precision: int = 1, xbmc=None) -> Optional[str]:
+def response_total_size(response) -> int:
+    return _size_bytes_from_response(response)
+
+
+def _size_bytes_from_response(response) -> int:
+    content_range = response.headers.get('Content-Range', '')
+    if content_range and '/' in content_range:
+        total = content_range.rsplit('/', 1)[-1].strip()
+        if total.isdigit():
+            return int(total)
+    content_length = response.headers.get('Content-Length')
+    if content_length and content_length.isdigit():
+        return int(content_length)
+    return 0
+
+
+def get_file_size_human_readable(
+        file_path: str,
+        precision: int = 1,
+        xbmc=None,
+        headers: Optional[dict] = None,
+) -> Optional[str]:
     """
     Returns file size as a formatted string (e.g., "1.23 GB" or "456 MB").
     Returns None if size cannot be determined.
     """
     try:
         if file_path.startswith(('http://', 'https://')):
-            # Remote file: Check Content-Length header
-            response = requests.head(file_path, allow_redirects=True, timeout=5)
-            size_bytes = int(response.headers.get('Content-Length', 0))
+            hdrs = dict(headers or {})
+            # Some hosts (e.g. Sledujteto player) reject plain HEAD/GET without Range + Referer.
+            if 'Range' not in hdrs:
+                hdrs['Range'] = 'bytes=0-0'
+            response = requests.get(
+                file_path, headers=hdrs, allow_redirects=True, timeout=10, stream=True,
+            )
+            response.close()
+            size_bytes = _size_bytes_from_response(response)
+            if size_bytes <= 0:
+                response = requests.head(
+                    file_path, headers=hdrs, allow_redirects=True, timeout=10,
+                )
+                size_bytes = _size_bytes_from_response(response)
         else:
-            # Local file
             size_bytes = os.path.getsize(file_path)
 
-        # Convert to human-readable format
+        if size_bytes <= 0:
+            return None
         return convert_size(size_bytes, precision)
     except (requests.RequestException, OSError) as e:
         if xbmc:

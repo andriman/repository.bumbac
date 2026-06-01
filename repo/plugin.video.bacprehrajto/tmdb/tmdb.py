@@ -28,7 +28,12 @@ def tmdb_episodes(_handle, _url, sname, params):
         if not category['name']: category['name'] = "Neznámo"
         if category['name'] != 'Speciály' and category['name'] != 'Specials':
             epNo = 'E' + str(category['episode_number'])
-            list_item = xbmcgui.ListItem(label=epNo + ': ' + category['name'])
+
+            air_date = category.get('air_date') or ''
+            air_year = air_date.split('-')[0] if air_date else ''
+            date_label2 = f"Datum vysílání: {air_date}" if air_date else ''
+
+            list_item = xbmcgui.ListItem(label=epNo + ': ' + category['name'], label2=date_label2)
 
             plot = category['overview']
             if plot == "":
@@ -60,6 +65,10 @@ def tmdb_episodes(_handle, _url, sname, params):
             ]
             # Build extended plot with director info
             extended_plot = plot
+            if air_date:
+                extended_plot = f"Datum vysílání: {air_date}\n\n" + extended_plot
+                plot = f"Datum vysílání: {air_date}\n\n" + plot
+
             if directors:
                 extended_plot += f"\n\nDirectors: {', '.join(directors)}"
 
@@ -68,7 +77,7 @@ def tmdb_episodes(_handle, _url, sname, params):
                 # 'genre': genre,
                 'plot': extended_plot,
                 'plotoutline': plot,  # Keep original plot for brief view
-                'year': category['air_date'],
+                'year': air_year,
                 'rating': category["vote_average"],
                 # 'director': directors,
                 # 'cast': main_cast,
@@ -78,7 +87,8 @@ def tmdb_episodes(_handle, _url, sname, params):
                 #     member['name'] for member in category.get('crew', [])
                 #     if member.get('job') == 'Writer'
                 # ],
-                'premiered': category.get('air_date', ''),
+                'premiered': air_date,
+                'aired': air_date,
                 'episode': category.get('episode_number', 0),
                 'status': category.get('status', 'Released')
             }
@@ -91,8 +101,6 @@ def tmdb_episodes(_handle, _url, sname, params):
             #     'rating': category["vote_average"],
             # }
 
-            list_item.setInfo('video', videoInfo)
-
             #dprint("tmdb_episodes(): " + str(category))
             #dprint("tmdb_episodes(): " + str(videoInfo))
 
@@ -104,15 +112,6 @@ def tmdb_episodes(_handle, _url, sname, params):
             ###
 
             ####
-
-            # videoInfo = {
-            #     'title': category['name'],
-            #     'plot': plot,
-            #     'plotoutline': plot,
-            #     'year': category['air_date'],
-            #     'rating': category["vote_average"],
-            # }
-            #
 
             art = {'thumb': thumb, 'icon': thumb, 'fanart': fanart}
 
@@ -316,7 +315,7 @@ def tmdb_movie(_handle, _url, page, type):
 
             list_item.setArt(art)
             url = get_url(
-                url=_url,
+                _url,
                 action='listing_search',
                 name=category['title'] + " " + year,
                 type=type,
@@ -421,7 +420,7 @@ def tmdb_movie_genre(_handle, _url, page, type, id):
 
             list_item.setArt(art)
             url = get_url(
-                url=_url,
+                _url,
                 action='listing_search',
                 name=category['title'] + " " + year,
                 type=type,
@@ -504,7 +503,7 @@ def tmdb_year(_handle, _url, page, type, id):
 
             if type == 'movie':
                 url = get_url(
-                    url=_url,
+                    _url,
                     action='listing_search',
                     name=category['title'] + " " + year,
                     type=type,

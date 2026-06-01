@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <addon id="plugin.video.bacprehrajto"
-version="1.0.2"
+version="2.0.0"
 name="[COLOR cyan]Přehraj.to[/COLOR]"
 provider-name="Bac0001">
     <requires>
@@ -13,6 +13,7 @@ provider-name="Bac0001">
         <provides>video</provides>
         <provides>executable</provides>
     </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="cs">[COLOR cyan]Přehraj.to[/COLOR]</summary>
         <description lang="cs">Vyhledávání, přehrávání, stahování filmů a seriálů ze serveru Přehraj.to</description>
