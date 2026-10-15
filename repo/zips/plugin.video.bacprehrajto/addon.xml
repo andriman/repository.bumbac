@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <addon id="plugin.video.bacprehrajto"
-version="2.0.2"
+version="2.0.5"
 name="[COLOR cyan]Přehraj.to[/COLOR]"
 provider-name="Bac0001">
     <requires>
