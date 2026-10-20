@@ -26,6 +26,20 @@
             <icon>icon.png</icon>
         </assets>
     </extension>
+</addon><addon id="repository.a4ksubtitles" name="a4kSubtitles Repository" version="1.1.1" provider-name="Unknown">
+    <extension point="xbmc.addon.repository">
+        <dir>
+            <info>https://raw.githubusercontent.com/newt-sc/a4kSubtitles/master/packages/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/newt-sc/a4kSubtitles/master/packages/addons.xml.crc</checksum>
+            <datadir>https://github.com/newt-sc/a4kSubtitles/archive</datadir>
+            <artdir>https://github.com/a4k-openproject/a4kSubtitles/releases/download/v0.0.13</artdir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>a4kSubtitles</summary>
+        <description>a4kSubtitles Repository</description>
+        <platform>all</platform>
+    </extension>
 </addon><addon id="repository.bumbac" version="1.0.0" name="[COLOR cyan]BumBac[/COLOR] Repository" provider-name="BumBac">
   <extension point="xbmc.addon.repository" name="Kodi BumBac Repository">
     <dir minversion="18.9.0">
@@ -44,6 +58,56 @@
         <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
+</addon><addon id="repository.nokturno" name="Nokturno repozitář" version="1.1.1" provider-name="Nokturno">
+  <extension point="xbmc.addon.repository" name="Nokturno repozitář">
+    <dir>
+      <info compressed="false">https://raw.githubusercontent.com/nokturno-app/plugin.video.nokturno/main/repo/addons.xml</info>
+      <checksum verify="md5">https://raw.githubusercontent.com/nokturno-app/plugin.video.nokturno/main/repo/addons.xml.md5</checksum>
+      <datadir zip="true">https://raw.githubusercontent.com/nokturno-app/plugin.video.nokturno/main/repo/</datadir>
+    </dir>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="cs_CZ">Repozitář doplňku Nokturno – automatické aktualizace</summary>
+    <summary lang="sk_SK">Repozitár doplnku Nokturno – automatické aktualizácie</summary>
+    <summary lang="en_GB">Nokturno add-on repository – automatic updates</summary>
+    <description lang="cs_CZ">Po instalaci tohoto repozitáře se doplněk Nokturno aktualizuje sám. Zdroj: github.com/nokturno-app/plugin.video.nokturno</description>
+    <description lang="sk_SK">Po inštalácii tohto repozitára sa doplnok Nokturno aktualizuje sám. Zdroj: github.com/nokturno-app/plugin.video.nokturno</description>
+    <description lang="en_GB">Install this repository once and the Nokturno add-on keeps itself up to date. Source: github.com/nokturno-app/plugin.video.nokturno</description>
+    <platform>all</platform>
+    <license>All rights reserved</license>
+    <source>https://github.com/nokturno-app/plugin.video.nokturno</source>
+    <assets>
+      <icon>resources/icon.png</icon>
+    </assets>
+  </extension>
+</addon><addon id="repository.peno64" name="peno64 repository" version="1.5" provider-name="peno64">
+    <extension point="xbmc.addon.repository" name="peno64 repository">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/peno64/repository.peno64/master/repo/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/peno64/repository.peno64/master/repo/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/peno64/repository.peno64/master/repo/zips/</datadir>
+        </dir>
+	<dir minversion="18.0" maxversion="18.9.9">
+            <info compressed="false">https://raw.githubusercontent.com/peno64/repository.peno64/master/leia/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/peno64/repository.peno64/master/leia/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/peno64/repository.peno64/master/leia/zips/</datadir>
+        </dir>
+        <dir minversion="19.0.0">
+            <info compressed="false">https://raw.githubusercontent.com/peno64/repository.peno64/master/matrix/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/peno64/repository.peno64/master/matrix/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/peno64/repository.peno64/master/matrix/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>peno64 repository</summary>
+        <description>peno64 repository</description>
+        <disclaimer />
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
 </addon><addon id="service.subtitles.bb.edna.cz" name="Edna.cz [BB]" version="1.0.1" provider-name="BumBac">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
