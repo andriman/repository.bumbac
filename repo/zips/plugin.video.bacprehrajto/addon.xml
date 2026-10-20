@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <addon id="plugin.video.bacprehrajto"
-version="2.0.5"
+version="2.0.6"
 name="[COLOR cyan]Přehraj.to[/COLOR]"
 provider-name="Bac0001">
     <requires>
@@ -14,6 +14,14 @@ provider-name="Bac0001">
         <provides>executable</provides>
     </extension>
     <extension point="xbmc.service" library="service.py" start="startup"/>
+    <extension point="kodi.context.item">
+        <menu id="kodi.core.main">
+            <item library="context_search.py">
+                <label>Hledat v Přehraj.to</label>
+                <visible>Addon.SettingBool(plugin.video.bacprehrajto,context_menu_search) + [String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season)]</visible>
+            </item>
+        </menu>
+    </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="cs">[COLOR cyan]Přehraj.to[/COLOR]</summary>
         <description lang="cs">Vyhledávání, přehrávání, stahování filmů a seriálů ze serveru Přehraj.to</description>

@@ -1,0 +1,16 @@
+{
+  "name": "Přehraj.to",
+  "plugin": "plugin.video.bacprehrajto",
+  "priority": 100,
+  "is_resolvable": "false",
+  "assert": {
+    "play_movie": ["title"],
+    "play_episode": ["showname", "season", "episode"],
+    "search_movie": ["title"],
+    "search_episode": ["showname", "season", "episode"]
+  },
+  "play_movie": "plugin://plugin.video.bacprehrajto/?action=listing_search&name={title}",
+  "play_episode": "plugin://plugin.video.bacprehrajto/?action=listing_search&name={name}",
+  "search_movie": "plugin://plugin.video.bacprehrajto/?action=listing_search&name={title}",
+  "search_episode": "plugin://plugin.video.bacprehrajto/?action=listing_search&name={name}"
+}

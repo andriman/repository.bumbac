@@ -1,0 +1,1 @@
+CertUtil -hashfile addons.xml MD5

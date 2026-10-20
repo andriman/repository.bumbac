@@ -1,0 +1,163 @@
+msgid ""
+msgstr ""
+
+msgctxt "#32003"
+msgid "Select TV Show"
+msgstr "Vyberte seriál"
+
+msgctxt "#32004"
+msgid "Select file"
+msgstr "Vyberte soubor"
+
+msgctxt "#32100"
+msgid "Addon is only for czech and slovak subtitles. Check the settings of the language for which you want to download subtitles."
+msgstr "Doplněk je určen pro české a slovenské titulky, zkontrolujte Vaše nastavení jazyků, pro které chcete titulky stahovat."
+
+msgctxt "#32101"
+msgid "Open settings?"
+msgstr "Otevřít nastavení?"
+
+msgctxt "#32110"
+msgid "Use manual search string"
+msgstr "Zadejte retezec k vyhledani"
+
+msgctxt "#32111"
+msgid "Enter series number"
+msgstr "Zadejte číslo řady seriálu"
+
+msgctxt "#32112"
+msgid "Enter episode number"
+msgstr "Zadejte číslo epizody seriálu"
+
+msgctxt "#32900"
+msgid "Login Details"
+msgstr "Přihlašovací údaje"
+
+msgctxt "#32901"
+msgid "Nick/Username"
+msgstr "Uživ. jméno"
+
+msgctxt "#32902"
+msgid "Password"
+msgstr "Heslo"
+
+msgctxt "#32905"
+msgid "Invalid login detalis"
+msgstr "Nesprávné/nevyplněné přihlašovací údaje"
+
+msgctxt "#32906"
+msgid "Titulky.com reached the daily download limit for this address. Try again later."
+msgstr "Titulky.com vyčerpaly denní limit stahování pro tuto adresu. Zkuste to později."
+
+msgctxt "#32910"
+msgid "Searching"
+msgstr "Vyhledávání"
+
+msgctxt "#32912"
+msgid "Czech subtitles"
+msgstr "České titulky"
+
+msgctxt "#32913"
+msgid "Slovak subtitles"
+msgstr "Slovenské titulky"
+
+msgctxt "#32911"
+msgid "Use text in brackets as search pattern and normalize"
+msgstr "Použít text v závorce ve jméně jako základ pro vyhledávaní"
+
+msgctxt "#32914"
+msgid "Clean the title before search: drop brackets, treat _ . + - as spaces, and cut the name off at a rip tag (1080p, BluRay, and similar)."
+msgstr "Před hledáním vyčistit název: odstranit závorky, brát _ . + - jako mezery a uříznout název u označení ripu (1080p, BluRay a podobně)."
+
+msgctxt "#32920"
+msgid "Cache"
+msgstr "Mezipaměť"
+
+msgctxt "#32921"
+msgid "Clear cache after (minutes)"
+msgstr "Smazat mezipaměť po (minutách)"
+
+msgctxt "#32941"
+msgid "Downloading from Titulky.com"
+msgstr "Stahování z Titulky.com"
+
+msgctxt "#32942"
+msgid "Waiting %s seconds. Titulky.com adds this wait for visitors who are not signed in or premium."
+msgstr "Čekání %s sekund. Titulky.com přidává tuto prodlevu návštěvníkům bez přihlášení nebo prémiového účtu."
+
+msgctxt "#32943"
+msgid "Type the security code"
+msgstr "Opište bezpečnostní kód"
+
+msgctxt "#32944"
+msgid "The security code was wrong. Try again."
+msgstr "Bezpečnostní kód byl zadán špatně. Zkuste to znovu."
+
+msgctxt "#32945"
+msgid "OK"
+msgstr "Potvrdit"
+
+msgctxt "#32946"
+msgid "Cancel"
+msgstr "Zrušit"
+
+msgctxt "#32947"
+msgid "Select search title"
+msgstr "Vyberte název pro hledání"
+
+msgctxt "#32948"
+msgid "Custom search"
+msgstr "Vlastní hledání"
+
+msgctxt "#32949"
+msgid "...Addon settings..."
+msgstr "...Nastavení doplňku..."
+
+msgctxt "#32950"
+msgid "When a subtitle link points to Titulky.com"
+msgstr "Když odkaz na titulky vede na Titulky.com"
+
+msgctxt "#32951"
+msgid "End in Error"
+msgstr "Skončit chybou"
+
+msgctxt "#32952"
+msgid "Follow the link"
+msgstr "Následovat odkaz"
+
+msgctxt "#32953"
+msgid "Clear Search Flow"
+msgstr "Čisté hledání"
+
+msgctxt "#32954"
+msgid "End in Error: show a notice and skip that link. Follow the link: download the subtitle from that Titulky.com page. Clear Search Flow: skip that page and search Titulky.com for this episode's rips."
+msgstr "Skončit chybou: zobrazí upozornění a odkaz přeskočí. Následovat odkaz: stáhne titulky z dané stránky Titulky.com. Čisté hledání: stránku přeskočí a na Titulky.com vyhledá ripy této epizody."
+
+msgctxt "#32955"
+msgid "This subtitle link points to Titulky.com. The addon is set to stop instead of opening it."
+msgstr "Odkaz na titulky vede na Titulky.com. Doplněk je nastaven tak aby ho neotevíral."
+
+msgctxt "#32956"
+msgid "Clear cache"
+msgstr "Vymazat mezipaměť"
+
+msgctxt "#32957"
+msgid "Delete the saved subtitle pages and downloaded archives now."
+msgstr "Hned smazat uložené stránky a stažené archivy titulků."
+
+msgctxt "#32958"
+msgid "Cache cleared."
+msgstr "Mezipaměť byla vymazána."
+
+msgctxt "#32959"
+msgid "Select title"
+msgstr "Vyberte název"
+
+msgctxt "#32960"
+msgid "%s at Titulky.com. Click to continue"
+msgstr "%s na Titulky.com. Kliknutím pokračovat"
+
+msgctxt "#32967"
+msgid "Edna.cz has no such title"
+msgstr "Edna.cz tento název nemá"
+

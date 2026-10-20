@@ -45,7 +45,6 @@ def fetch_account_status(addon_ref=None) -> AccountInfo:
     return AccountInfo(
         is_logged_in=True,
         account_name=account_email,
-        membership_status='Logged in',
         expiration=premium_text,
         is_premium=_premium_is_active(premium_text),
         my_videos_count=counts.my_videos,

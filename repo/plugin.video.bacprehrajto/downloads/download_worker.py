@@ -15,6 +15,7 @@ from common import (
 )
 from downloads.download_naming import get_name_ext
 from downloads.download_queue import (
+    PROVIDER_HELLSPY,
     PROVIDER_PREHRAJTO,
     PROVIDER_SLEDUJTETO,
     STATUS_CANCELED,
@@ -81,7 +82,17 @@ def _get_premium_cookies():
     return session.cookies if has_auth_cookies(session) else None
 
 
+def _page_headers(provider: str) -> dict:
+    if provider == PROVIDER_HELLSPY:
+        from providers.hellspy.auth import request_headers
+        return request_headers()
+    return get_headers()
+
+
 def _page_session(provider: str):
+    if provider == PROVIDER_HELLSPY:
+        from providers.hellspy.session import get_session as get_hellspy_session
+        return get_hellspy_session(), None
     if provider == PROVIDER_SLEDUJTETO:
         from providers.sledujteto.session import get_session as get_sledujteto_session
         return get_sledujteto_session(), None
@@ -92,8 +103,11 @@ def _page_session(provider: str):
 def fetch_download_context(page_url: str, provider: Optional[str] = None) -> DownloadContext:
     provider = provider or detect_provider(page_url)
     session, cookies = _page_session(provider)
-    res = session.get(page_url, headers=get_headers(), allow_redirects=True)
+    res = session.get(page_url, headers=_page_headers(provider), allow_redirects=True)
     res.raise_for_status()
+    if provider == PROVIDER_HELLSPY:
+        from providers.hellspy.session import save_session as save_hellspy_session
+        save_hellspy_session()
     content = res.content
     resolved_page_url = res.url
 

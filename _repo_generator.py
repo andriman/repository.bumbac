@@ -332,6 +332,7 @@ class Generator:
                 addons_xml.write(
                     addons_xml_path, encoding="utf-8", xml_declaration=True
                 )
+                self._normalize_newlines(addons_xml_path)
 
                 return changed
             except Exception as e:
@@ -346,8 +347,9 @@ class Generator:
         Generates a new addons.xml.md5 file.
         """
         try:
-            with open(addons_xml_path, "r", encoding="utf-8") as f:
-                m = hashlib.md5(f.read().encode("utf-8")).hexdigest()
+            self._normalize_newlines(addons_xml_path)
+            with open(addons_xml_path, "rb") as f:
+                m = hashlib.md5(f.read()).hexdigest()
                 self._save_file(m, file=md5_path)
 
             return True
@@ -357,6 +359,15 @@ class Generator:
                     color_text(md5_path, 'yellow'), color_text(e, 'red')
                 )
             )
+
+    def _normalize_newlines(self, path):
+        """
+        Write LF newlines so the checksum matches the bytes Git publishes.
+        """
+        with open(path, "rb") as f:
+            data = f.read().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+        with open(path, "wb") as f:
+            f.write(data)
 
     def _save_file(self, data, file):
         """

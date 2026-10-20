@@ -5,10 +5,24 @@ from urllib.parse import quote, urljoin
 import xbmcgui
 from bs4 import BeautifulSoup
 
-from common import SLEDUJTETO_BASE, g_max_searched_vids, get_headers, icons_path
+from common import (
+    SLEDUJTETO_BASE,
+    g_sledujteto_max_searched_vids,
+    g_sledujteto_search_max_pages,
+    get_headers,
+    icons_path,
+    is_possible_nsfw,
+)
 from model.SearchMeta import SearchMeta
 from providers.sledujteto.session import get_session
-from providers.sledujteto.utils import date_str_to_iso, duration_to_seconds
+from providers.sledujteto.utils import (
+    date_str_to_iso,
+    duration_to_seconds,
+    format_duration_hms,
+    parameter_table_value,
+)
+from utils.search_browse_log import get_search_browse_logger
+from utils.listitem_infotag import apply_art, apply_audio_stream_info, apply_video_info, apply_video_stream_info
 from utils.utils import dprint, size_str_to_bytes
 
 SEARCH_TIMEOUT = 30
@@ -22,6 +36,15 @@ def _api_headers() -> dict:
         'X-Requested-With': 'XMLHttpRequest',
         'Accept': 'application/json',
     }
+
+
+def _clock_label(duration) -> str:
+    if duration is None or str(duration).strip() == '':
+        return ''
+    try:
+        return format_duration_hms(duration)
+    except ValueError:
+        return str(duration).strip()
 
 
 def _file_json_to_listitem(item: dict) -> Optional[xbmcgui.ListItem]:
@@ -38,10 +61,13 @@ def _file_json_to_listitem(item: dict) -> Optional[xbmcgui.ListItem]:
     )
     thumb = item.get('preview') or ''
 
-    label = f'[{resolution}] | {title} | {file_size or duration}'
+    size_text = str(file_size or '').strip()
+    label = f'[{resolution}] | {title}'
+    if size_text:
+        label = f'{label} | {size_text}'
     list_item = xbmcgui.ListItem(
         label=label,
-        label2=file_size or duration,
+        label2=_clock_label(duration),
         path=page_url,
         offscreen=True,
     )
@@ -68,9 +94,9 @@ def _file_json_to_listitem(item: dict) -> Optional[xbmcgui.ListItem]:
     if item.get('movie_codec'):
         stream_info['codec'] = item['movie_codec']
 
-    list_item.addStreamInfo('video', stream_info)
+    apply_video_stream_info(list_item, stream_info)
     if item.get('movie_audiocodec'):
-        list_item.addStreamInfo('audio', {
+        apply_audio_stream_info(list_item, {
             'codec': item['movie_audiocodec'],
             'channels': item.get('movie_audiochannels'),
         })
@@ -87,13 +113,13 @@ def _file_json_to_listitem(item: dict) -> Optional[xbmcgui.ListItem]:
     if is_nsfw:
         plot_parts.append('NSFW')
     if plot_parts:
-        list_item.setInfo('video', {'plot': ' | '.join(plot_parts)})
+        apply_video_info(list_item, {'plot': ' | '.join(plot_parts), 'mediatype': 'video', 'title': title})
 
     art = {'icon': icons_path + 'sledujteto.jpg'}
     if thumb:
         art['poster'] = thumb
         art['thumb'] = thumb
-    list_item.setArt(art)
+    apply_art(list_item, art)
     list_item.setProperty('IsPlayable', 'true')
     return list_item
 
@@ -103,9 +129,10 @@ def _fetch_search_api(query: str, skip_nsfw: bool) -> Tuple[List[xbmcgui.ListIte
     items: List[xbmcgui.ListItem] = []
     page = 1
     page_count = 1
-    max_items = int(g_max_searched_vids)
+    max_items = int(g_sledujteto_max_searched_vids)
+    max_pages = int(g_sledujteto_search_max_pages)
 
-    while page <= page_count and len(items) < max_items:
+    while page <= page_count and len(items) < max_items and page <= max_pages:
         params = {
             'query': query,
             'limit': min(50, max_items - len(items)),
@@ -128,14 +155,25 @@ def _fetch_search_api(query: str, skip_nsfw: bool) -> Tuple[List[xbmcgui.ListIte
             raise RuntimeError('Neočekávaná odpověď API (chybí seznam souborů)')
 
         page_count = int(data.get('pages') or 1)
+        items_before = len(items)
         for file_item in files:
-            if skip_nsfw and file_item.get('is_nsfw'):
+            title = file_item.get('filename') or file_item.get('name') or ''
+            if skip_nsfw and (file_item.get('is_nsfw') or is_possible_nsfw(title)):
                 continue
             list_item = _file_json_to_listitem(file_item)
             if list_item is not None:
                 items.append(list_item)
             if len(items) >= max_items:
                 break
+
+        browse_log = get_search_browse_logger()
+        if browse_log is not None:
+            browse_log.log_sledujteto_page(
+                page=page,
+                video_count=len(items),
+                added_on_page=len(items) - items_before,
+                total_api_pages=page_count,
+            )
         page += 1
 
     return items, page_count
@@ -173,19 +211,20 @@ def _parse_file_card(card: BeautifulSoup) -> Optional[xbmcgui.ListItem]:
         return None
 
     page_url = urljoin(SLEDUJTETO_BASE, link.get('href', ''))
-    duration = _badge_text(card, 'bi-clock')
-    resolution = _badge_text(card, 'bi-display')
+    duration = _badge_text(card, 'bi-clock') or parameter_table_value(card, 'Trvání')
+    resolution = _badge_text(card, 'bi-display') or parameter_table_value(card, 'Rozli')
+    file_size = parameter_table_value(card, 'Velikost').strip()
 
     label_parts = []
     if resolution:
         label_parts.append(f'[{resolution}]')
     label_parts.append(title)
-    if duration:
-        label_parts.append(duration)
+    if file_size:
+        label_parts.append(file_size)
 
     list_item = xbmcgui.ListItem(
         label=' | '.join(label_parts),
-        label2=duration or resolution,
+        label2=_clock_label(duration),
         path=page_url,
         offscreen=True,
     )
@@ -203,28 +242,43 @@ def _parse_file_card(card: BeautifulSoup) -> Optional[xbmcgui.ListItem]:
         except (ValueError, ZeroDivisionError):
             pass
 
-    list_item.addStreamInfo('video', stream_info)
+    apply_video_stream_info(list_item, stream_info)
+    apply_video_info(list_item, {'mediatype': 'video', 'title': title})
     thumb = _extract_thumbnail(card)
     art = {'icon': icons_path + 'sledujteto.jpg'}
     if thumb:
         art['poster'] = thumb
         art['thumb'] = thumb
-    list_item.setArt(art)
+    apply_art(list_item, art)
     list_item.setProperty('IsPlayable', 'true')
     return list_item
 
 
-def parse_search_html(html: bytes) -> List[xbmcgui.ListItem]:
+def _card_marked_nsfw(card: BeautifulSoup) -> bool:
+    classes = ' '.join(card.get('class') or []).lower()
+    if 'nsfw' in classes:
+        return True
+    for node in card.select('[class*="nsfw"], [data-nsfw]'):
+        return True
+    return False
+
+
+def parse_search_html(html: bytes, skip_nsfw: bool = False) -> List[xbmcgui.ListItem]:
     soup = BeautifulSoup(html, 'html.parser')
     items: List[xbmcgui.ListItem] = []
     for card in soup.select('article.file-card'):
+        if skip_nsfw and _card_marked_nsfw(card):
+            continue
         item = _parse_file_card(card)
-        if item is not None:
-            items.append(item)
+        if item is None:
+            continue
+        if skip_nsfw and is_possible_nsfw(item.getLabel() or ''):
+            continue
+        items.append(item)
     return items
 
 
-def _fetch_search_html(query: str) -> List[xbmcgui.ListItem]:
+def _fetch_search_html(query: str, skip_nsfw: bool = False) -> List[xbmcgui.ListItem]:
     session = get_session()
     url = f'{SLEDUJTETO_BASE}/vyhledat/?search={quote(query)}'
     dprint(f'sledujteto search(): HTML fallback GET {url}')
@@ -232,7 +286,7 @@ def _fetch_search_html(query: str) -> List[xbmcgui.ListItem]:
     res.raise_for_status()
     from providers.browsing_context import remember_provider_page
     remember_provider_page(res.url)
-    return parse_search_html(res.content)
+    return parse_search_html(res.content, skip_nsfw=skip_nsfw)
 
 
 def fetch_search(query: str, skip_nsfw: bool = False) -> Tuple[List[xbmcgui.ListItem], SearchMeta]:
@@ -244,9 +298,17 @@ def fetch_search(query: str, skip_nsfw: bool = False) -> Tuple[List[xbmcgui.List
     except Exception as exc:
         dprint(f'sledujteto search(): API failed, trying HTML: {exc}')
 
-    items = _fetch_search_html(query)
+    items = _fetch_search_html(query, skip_nsfw=skip_nsfw)
     dprint(f'sledujteto search(): HTML found {len(items)} items')
-    max_items = int(g_max_searched_vids)
+    browse_log = get_search_browse_logger()
+    if browse_log is not None:
+        browse_log.log_sledujteto_page(
+            page=1,
+            video_count=len(items),
+            added_on_page=len(items),
+            total_api_pages=1,
+        )
+    max_items = int(g_sledujteto_max_searched_vids)
     if len(items) > max_items:
         items = items[:max_items]
     return items, SearchMeta(pages_scraped=1, cancelled=False, is_complete=True)

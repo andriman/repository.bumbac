@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings version="1">
+  <section id="service.subtitles.bb.edna.cz">
+    <category id="login" label="32900">
+      <group id="1">
+        <setting id="username" type="string" label="32901">
+          <level>0</level>
+          <default></default>
+          <constraints>
+            <allowempty>true</allowempty>
+          </constraints>
+          <control type="edit" format="string"/>
+        </setting>
+        <setting id="password" type="string" label="32902">
+          <level>0</level>
+          <default></default>
+          <constraints>
+            <allowempty>true</allowempty>
+          </constraints>
+          <control type="edit" format="string">
+            <hidden>true</hidden>
+          </control>
+        </setting>
+      </group>
+    </category>
+    <category id="search" label="32910">
+      <group id="1">
+        <setting id="search_czech" type="boolean" label="32912">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="search_slovak" type="boolean" label="32913">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="search_title_in_brackets" type="boolean" label="32911">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="try_cleanup_title" type="boolean" label="32914">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="titulky_link_action" type="integer" label="32950" help="32954">
+          <level>0</level>
+          <default>2</default>
+          <constraints>
+            <options>
+              <option label="32951">0</option>
+              <option label="32952">1</option>
+              <option label="32953">2</option>
+            </options>
+          </constraints>
+          <control type="list" format="string"/>
+        </setting>
+      </group>
+    </category>
+    <category id="cache" label="32920">
+      <group id="1">
+        <setting id="cache_minutes" type="integer" label="32921">
+          <level>0</level>
+          <default>10</default>
+          <constraints>
+            <minimum>1</minimum>
+            <step>1</step>
+            <maximum>60</maximum>
+          </constraints>
+          <control type="slider" format="integer"/>
+        </setting>
+        <setting id="clear_cache" type="action" label="32956" help="32957">
+          <level>0</level>
+          <constraints>
+            <allowempty>true</allowempty>
+          </constraints>
+          <data>RunScript(special://home/addons/service.subtitles.bb.edna.cz/resources/lib/cache_action.py)</data>
+          <control type="button" format="action"/>
+        </setting>
+      </group>
+    </category>
+  </section>
+</settings>

@@ -9,6 +9,7 @@ from common import (
 )
 from model.StreamData import StreamData
 from model.SubData import SubData
+from providers.prehrajto.auth import refresh_premium_from_html
 from providers.prehrajto.download import _has_cookies, ensure_premium_stream, resolve_premium_download_url
 from providers.prehrajto.get_stream_data import (
     merge_subtitle_lists,
@@ -35,6 +36,8 @@ def build_prehrajto_stream_context(
         content: bytes,
         cookies: Optional[RequestsCookieJar],
 ) -> PrehrajtoStreamContext:
+    if 'prehraj' in page_url:
+        refresh_premium_from_html(content)
     streams = parse_streams_from_html(content)
     if cookies and 'prehraj' in page_url:
         subs = parse_all_subtitles_from_html(content) or parse_subtitles_from_html(content)

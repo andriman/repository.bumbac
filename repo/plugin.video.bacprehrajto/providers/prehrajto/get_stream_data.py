@@ -7,7 +7,7 @@ import xbmcgui
 from bs4 import BeautifulSoup
 
 import hjson
-from common import subtitles_path, _ADDON_NAME, get_user_agent, get_prehrajto_base
+from common import _ADDON_NAME, get_user_agent, get_prehrajto_base
 from model.StreamData import StreamData
 from model.SubData import SubData
 from utils.utils import dprint, filter_subtitles, build_headers
@@ -231,12 +231,6 @@ def get_streams_data(
 
     _update_progress(p_dialog, 60, 'Hledám titulky')
     filtered_sub_data = parse_subtitles_from_html(src_bytes)
-
-    os.makedirs(os.path.dirname(subtitles_path), exist_ok=True)
-    for sdata in filtered_sub_data:
-        sfile_path = subtitles_path + sdata.label + '.txt'
-        with open(sfile_path, 'w+', encoding='utf-8') as f:
-            f.write(sdata.path)
 
     _update_progress(p_dialog, 100, '')
     if owns_dialog:

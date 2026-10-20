@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 import requests
-from cache.subtitle_cache import get_subtitle_cache_dir
+from cache.paths import ensure_cache_initialized, get_subtitle_cache_dir
 from common import g_download_path, get_headers, get_user_agent
 from downloads.downloads_utils import cleanup_subtitle_sidecars, get_download_folder
 from model.SubData import SubData
@@ -48,6 +48,7 @@ def _label_with_size(base_label: str, size_str: Optional[str]) -> str:
 
 def _materialize_remote_subtitle(sub: SubData, referer: Optional[str] = None) -> str:
     """Cache remote subs with track label and size visible in Kodi's subtitle list."""
+    ensure_cache_initialized()
     ext = _subtitle_extension(sub.path)
     safe_label = sanitize_subtitle_label(sub.label)
     url_key = hashlib.md5(sub.path.encode('utf-8', errors='replace')).hexdigest()[:10]

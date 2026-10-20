@@ -9,6 +9,7 @@ from model.StreamData import StreamData
 from model.SubData import SubData
 from providers.sledujteto.parse_set_tracks import parse_set_tracks
 from providers.sledujteto.session import get_session
+from providers.sledujteto.utils import duration_to_seconds, parameter_table_value, size_duration_label
 from utils.StrUtils import find_pattern, find_pattern_groups
 from utils.utils import build_headers, dprint
 
@@ -20,18 +21,6 @@ _SUBTITLE_URL_RE = re.compile(
     r'https?://[^\s"\'<>]+\.(?:vtt|srt)(?:\?[^\s"\'<>]*)?',
     re.IGNORECASE,
 )
-
-
-def _table_value(soup: BeautifulSoup, label_fragment: str) -> str:
-    for row in soup.select('.parameters-wrapper tr, table.table-striped tr'):
-        cells = row.find_all('td')
-        if len(cells) < 3:
-            continue
-        label = cells[1].get_text(' ', strip=True)
-        if label_fragment.lower() not in label.lower():
-            continue
-        return cells[2].get_text(' ', strip=True)
-    return ''
 
 
 def _resolve_stream_via_init(html: str, page_url: str) -> Optional[str]:
@@ -121,9 +110,15 @@ def get_streams_data(
         return None, None
 
     soup = BeautifulSoup(html, 'html.parser')
-    resolution = _table_value(soup, 'Rozli')
-    size = _table_value(soup, 'Velikost')
-    duration = _table_value(soup, 'Trvání')
+    resolution = parameter_table_value(soup, 'Rozli')
+    size = parameter_table_value(soup, 'Velikost')
+    duration = parameter_table_value(soup, 'Trvání')
+    duration_seconds = 0
+    if duration:
+        try:
+            duration_seconds = duration_to_seconds(duration)
+        except ValueError:
+            dprint(f'sledujteto get_stream_data(): unparsed duration {duration!r}')
 
     quality = 0
     label = resolution or 'Stream'
@@ -133,7 +128,7 @@ def get_streams_data(
         except ValueError:
             pass
 
-    label2 = size or duration
+    label2 = size_duration_label(size, duration)
     headers = build_headers(get_user_agent(), page_url)
 
     stream_data = StreamData(
@@ -142,8 +137,12 @@ def get_streams_data(
         quality=quality,
         path=stream_url,
         headers=headers,
+        duration=duration_seconds or None,
     )
 
     sub_data = _parse_subtitles(html)
-    dprint(f'sledujteto get_stream_data(): stream={stream_url} subs={len(sub_data)}')
+    dprint(
+        f'sledujteto get_stream_data(): stream={stream_url} '
+        f'duration={label2} subs={len(sub_data)}'
+    )
     return [stream_data], sub_data

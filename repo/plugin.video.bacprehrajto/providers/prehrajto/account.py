@@ -7,9 +7,10 @@ from common import get_headers, get_prehrajto_base
 from providers.browsing_context import remember_provider_page
 from model.AccountInfo import AccountInfo
 from providers.prehrajto.auth import (
+    _cache_premium_from_soup,
     is_session_valid,
     parse_header_login_state,
-    parse_premium_from_header,
+    parse_premium_status_from_header,
 )
 from providers.prehrajto.session import get_session, get_session_expiration
 
@@ -69,17 +70,19 @@ def _parse_expiration(section: BeautifulSoup) -> str:
 
 
 def _parse_membership_status(section: BeautifulSoup) -> str:
-    for row in section.find_all('div', class_='grid-x'):
-        left = row.find('div', class_=re.compile(r'cell'))
-        if left is None:
-            continue
-        strong = left.find('strong')
-        if strong is None:
-            continue
-        label = strong.get_text(strip=True).upper()
-        if 'PREMIUM' in label:
-            return strong.get_text(strip=True)
-    return ''
+    return _parse_grid_value(section, 'PREMIUM')
+
+
+_INACTIVE_MEMBERSHIP_VALUES = frozenset({
+    'neobjednáno',
+    'neaktivní',
+})
+
+
+def _profile_membership_is_premium(value: str) -> bool:
+    if not value:
+        return False
+    return value.strip().lower() not in _INACTIVE_MEMBERSHIP_VALUES
 
 
 def _parse_premium_expiration_display(expiration: str) -> tuple:
@@ -133,9 +136,9 @@ def fetch_account_status(addon, fetch_profile: bool = True) -> AccountInfo:
             session_expires_days=session_expires_days,
         )
 
-    premium_text = parse_premium_from_header(home_soup)
-    is_premium = premium_text is not None
-    expiration = premium_text or ''
+    _cache_premium_from_soup(home_soup)
+    is_premium, premium_text = parse_premium_status_from_header(home_soup)
+    expiration = premium_text or '' if is_premium else ''
     membership_status = ''
     recurring_payment = ''
     next_payment = ''
@@ -145,10 +148,13 @@ def fetch_account_status(addon, fetch_profile: bool = True) -> AccountInfo:
         remember_provider_page(prof_res.url)
         profile = _parse_profile(BeautifulSoup(prof_res.content, 'html.parser'))
         membership_status = profile.get('membership_status', '')
-        expiration = profile.get('expiration') or premium_text or ''
+        expiration = profile.get('expiration') or (premium_text if is_premium else '') or ''
         recurring_payment = profile.get('recurring_payment', '')
         next_payment = profile.get('next_payment', '')
-        is_premium = is_premium or bool(membership_status)
+        if membership_status:
+            is_premium = _profile_membership_is_premium(membership_status)
+            if is_premium and not expiration:
+                expiration = membership_status
 
     if not expiration and not is_premium:
         expiration = ''

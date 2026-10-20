@@ -2,10 +2,11 @@
 from typing import Optional
 from urllib.parse import urlparse
 
-from common import SLEDUJTETO_BASE, get_prehrajto_base, normalize_prehrajto_url
+from common import SLEDUJTETO_BASE, get_hellspy_base, get_prehrajto_base, normalize_prehrajto_url
 
 _last_prehrajto_page: Optional[str] = None
 _last_sledujteto_page: Optional[str] = None
+_last_hellspy_page: Optional[str] = None
 
 _MEDIA_EXTENSIONS = ('.mp4', '.mkv', '.webm', '.m3u8', '.mpd', '.ism', '.avi', '.flv')
 _MEDIA_HOST_HINTS = ('premiumcdn', 'cloudfront', 'akamaized', 'googlevideo')
@@ -35,9 +36,19 @@ def is_sledujteto_site_page(url: str) -> bool:
     return 'sledujteto.cz' in host
 
 
+def is_hellspy_site_page(url: str) -> bool:
+    if not url or _is_direct_stream_url(url):
+        return False
+    host = urlparse(url).netloc.lower()
+    return 'hellspy.' in host and not host.startswith('api.')
+
+
 def remember_provider_page(url: str) -> None:
-    global _last_prehrajto_page, _last_sledujteto_page
+    global _last_prehrajto_page, _last_sledujteto_page, _last_hellspy_page
     if not url:
+        return
+    if is_hellspy_site_page(url):
+        _last_hellspy_page = url
         return
     if is_sledujteto_site_page(url):
         _last_sledujteto_page = url
@@ -66,3 +77,20 @@ def clear_prehrajto_browsing_context() -> None:
 def clear_sledujteto_browsing_context() -> None:
     global _last_sledujteto_page
     _last_sledujteto_page = None
+
+
+def get_hellspy_referer() -> str:
+    if _last_hellspy_page:
+        return _last_hellspy_page
+    return get_hellspy_base() + '/'
+
+
+def clear_hellspy_browsing_context() -> None:
+    global _last_hellspy_page
+    _last_hellspy_page = None
+
+
+def clear_all_browsing_context() -> None:
+    clear_prehrajto_browsing_context()
+    clear_sledujteto_browsing_context()
+    clear_hellspy_browsing_context()

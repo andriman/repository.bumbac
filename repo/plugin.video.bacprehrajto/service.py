@@ -4,8 +4,11 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 
-from cache.subtitle_cache import SubtitleCacheSettingsMonitor, refresh_subtitle_cache_setting
+from cache.manager import refresh_all_cache_settings
+from cache.paths import ensure_cache_initialized
+from cache.subtitle_cache import SubtitleCacheSettingsMonitor
 from utils.user_agent_presets import refresh_user_agent_setting
+from utils.view_mode import poll_and_remember
 from common import _ADDON_NAME
 from downloads.download_queue import (
     STATUS_PENDING,
@@ -99,7 +102,8 @@ def _process_queue() -> None:
 if __name__ == '__main__':
     dprint('service: download queue service started')
     try:
-        refresh_subtitle_cache_setting()
+        ensure_cache_initialized()
+        refresh_all_cache_settings()
         refresh_user_agent_setting()
     except Exception as exc:
         dprint(f'service: settings display refresh failed: {exc}')
@@ -111,6 +115,7 @@ if __name__ == '__main__':
     while not _monitor.waitForAbort(1):
         try:
             _subtitle_cache_settings_monitor.tick()
+            poll_and_remember()
             _process_queue()
         except Exception as exc:
             dprint(f'service: queue error: {exc}')

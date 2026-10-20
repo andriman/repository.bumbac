@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import time
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 
@@ -55,6 +56,11 @@ def clear_session() -> None:
     if os.path.exists(path):
         os.remove(path)
     _session = requests.Session()
+    try:
+        from providers.prehrajto.auth import invalidate_auth_cache
+        invalidate_auth_cache()
+    except ImportError:
+        pass
 
 
 def _load_session(session: requests.Session) -> None:
@@ -81,6 +87,34 @@ def has_auth_cookies(session: requests.Session) -> bool:
     return bool(names & AUTH_COOKIE_NAMES)
 
 
+def auth_expiry_timestamp(session: Optional[requests.Session] = None) -> Optional[int]:
+    """Earliest expiry among auth cookies / access_token JWT, or None if unknown."""
+    session = session or get_session()
+    exp_ts: Optional[int] = None
+    for cookie in session.cookies:
+        if cookie.name not in AUTH_COOKIE_NAMES:
+            continue
+        candidate = cookie.expires
+        if cookie.name == 'access_token' and not candidate:
+            candidate = _jwt_expiry(cookie.value)
+        if candidate:
+            exp_ts = candidate if exp_ts is None else min(exp_ts, candidate)
+    return exp_ts
+
+
+def is_auth_expired(session: Optional[requests.Session] = None) -> bool:
+    exp_ts = auth_expiry_timestamp(session)
+    if exp_ts is None:
+        return False
+    return exp_ts <= int(time.time())
+
+
+def has_usable_auth_locally() -> bool:
+    """True when persisted auth cookies exist and are not past expiry (no HTTP)."""
+    session = get_session()
+    return has_auth_cookies(session) and not is_auth_expired(session)
+
+
 def _jwt_expiry(token: str) -> Optional[int]:
     try:
         payload = token.split('.')[1]
@@ -94,18 +128,7 @@ def _jwt_expiry(token: str) -> Optional[int]:
 
 def get_session_expiration() -> Tuple[str, str]:
     """Return (date/time string, countdown label) for auth session expiry."""
-    session = get_session()
-    exp_ts: Optional[int] = None
-
-    for cookie in session.cookies:
-        if cookie.name not in AUTH_COOKIE_NAMES:
-            continue
-        candidate = cookie.expires
-        if cookie.name == 'access_token' and not candidate:
-            candidate = _jwt_expiry(cookie.value)
-        if candidate:
-            exp_ts = candidate if exp_ts is None else min(exp_ts, candidate)
-
+    exp_ts = auth_expiry_timestamp()
     if exp_ts is None:
         return '', ''
 

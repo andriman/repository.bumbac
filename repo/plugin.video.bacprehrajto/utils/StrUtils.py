@@ -4,6 +4,81 @@ from typing import Optional
 
 import requests
 
+# Listing rows look like "[1920*1080] | release name | 550.8 MB".
+_LISTING_RESOLUTION_PREFIX = re.compile(r'^\[[^\]]+\]\s*\|\s*')
+_LISTING_SIZE_SUFFIX = re.compile(
+    r'\s*\|\s*\d+(?:[.,]\d+)?\s*(?:TB|GB|MB|KB|B)\s*$',
+    re.IGNORECASE,
+)
+
+# Whole release tokens between spaces, dots, underscores, or hyphens.
+_RELEASE_TAGS = (
+    'mkv', 'mp4', 'avi', 'mpg', 'mpeg', 'wmv', 'mov', 'm4v', 'ts', 'webm',
+    'czdabing', 'cztitulky', 'czdab', 'cztit', 'skdab', 'sktit', 'endab', 'entit',
+    'dabing', 'titulky', 'subs', 'dab', 'tit', 'sub',
+    'cz', 'sk', 'en', 'eng',
+    '2160p', '1080p', '720p', '480p', '4k',
+    'web-dl', 'webrip', 'webdl', 'bluray', 'bdrip', 'dvdrip', 'hdtv',
+    'fhd', 'uhd', 'hdr', 'hd',
+    'x264', 'x265', 'h264', 'h265', 'hevc',
+)
+_RELEASE_TAG = re.compile(
+    r'(?:^|[\s._-]+)(?:' + '|'.join(re.escape(tag) for tag in _RELEASE_TAGS) + r')(?=$|[\s._-])',
+    re.IGNORECASE,
+)
+# S03E10, S3E2, S01.E05, S1 E2. Text after the code is the episode name or the release group.
+_EPISODE_CODE = re.compile(
+    r'(?i)(?:^|[\s._+\-])S(\d{1,2})[\s._+\-]*E(\d{1,3})(?!\d)',
+)
+_TITLE_SEPARATORS = re.compile(r'[._+]+')
+
+
+def _truncate_after_episode_code(text: str) -> str:
+    """Keep the show name and the episode code. Drop everything after it."""
+    match = _EPISODE_CODE.search(text)
+    if match is None:
+        return text
+    head = text[:match.start()].strip(' ._+-')
+    code = f'S{match.group(1)}E{match.group(2)}'
+    if not head:
+        return code
+    return f'{head} {code}'
+
+
+def release_title_for_playback(label: str) -> str:
+    """Drop resolution, file size, release tags, and text after an episode code."""
+    text = (label or '').strip()
+    if not text:
+        return ''
+    cleaned = _LISTING_RESOLUTION_PREFIX.sub('', text)
+    cleaned = _LISTING_SIZE_SUFFIX.sub('', cleaned)
+    cleaned = _RELEASE_TAG.sub('', cleaned)
+    cleaned = _truncate_after_episode_code(cleaned)
+    cleaned = _TITLE_SEPARATORS.sub(' ', cleaned)
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip(' ._-')
+    return cleaned or text
+
+
+def drop_trailing_stored_year(title: str, year) -> str:
+    """Remove a trailing year when the playing item already stores that year."""
+    text = (title or '').strip()
+    if not text:
+        return ''
+    try:
+        year_text = str(int(year))
+    except (TypeError, ValueError):
+        return text
+    if not re.fullmatch(r'(?:19|20)\d{2}', year_text):
+        return text
+    match = re.search(
+        r'(?:[\s._-]+|\s*\(\s*)' + re.escape(year_text) + r'\s*\)?\s*$',
+        text,
+    )
+    if match is None:
+        return text
+    kept = text[:match.start()].strip(' ._-')
+    return kept or text
+
 
 # Expecting 01:54:22 or 00:54:41
 def crop_time(time_str: str) -> str:

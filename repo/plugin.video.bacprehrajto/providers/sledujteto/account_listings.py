@@ -16,6 +16,7 @@ from providers.sledujteto.parse_search import (
 )
 from providers.sledujteto.dashboard import get_dashboard_html
 from providers.sledujteto.session import get_session
+from utils.listitem_infotag import apply_video_info, apply_video_stream_info
 from utils.utils import dprint, size_str_to_bytes
 
 
@@ -94,7 +95,7 @@ def _parse_my_videos_table(html: bytes) -> List[xbmcgui.ListItem]:
                 stream_info['size'] = size_str_to_bytes(file_size)
             except (ValueError, TypeError):
                 pass
-        list_item.addStreamInfo('video', stream_info)
+        apply_video_stream_info(list_item, stream_info)
 
         plot_parts = []
         if uploaded:
@@ -102,7 +103,11 @@ def _parse_my_videos_table(html: bytes) -> List[xbmcgui.ListItem]:
         if status_badges:
             plot_parts.append(' | '.join(status_badges))
         if plot_parts:
-            list_item.setInfo('video', {'plot': ' | '.join(plot_parts)})
+            apply_video_info(list_item, {
+                'plot': ' | '.join(plot_parts),
+                'mediatype': 'video',
+                'title': title,
+            })
 
         list_item.setArt({'icon': icons_path + 'sledujteto.jpg'})
         list_item.setProperty('IsPlayable', 'true')

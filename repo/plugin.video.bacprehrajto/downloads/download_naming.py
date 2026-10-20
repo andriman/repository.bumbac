@@ -1,8 +1,34 @@
 import os
+import re
 from typing import Optional, Tuple
 from urllib.parse import unquote, urlparse
 
 from utils.StrUtils import find_pattern, find_pattern_groups
+
+_LISTING_SIZE_RE = re.compile(
+    r'\s\|\s\d+(?:[.,]\d+)?\s*(?:B|KB|MB|GB|TB)\s*$',
+    re.IGNORECASE,
+)
+_UNSAFE_FILENAME_RE = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+
+
+def _hellspy_stream_name(page_url: str, content: Optional[str]) -> Optional[str]:
+    """Video title from the page. This is the search result name without the appended size."""
+    if 'hellspy' not in (page_url or '').lower() or not content:
+        return None
+    from providers.hellspy.payload import extract_initial_data, video_record
+    record = video_record(extract_initial_data(content))
+    if not record:
+        return None
+    title = record.get('title')
+    if not isinstance(title, str):
+        return None
+    title = _LISTING_SIZE_RE.sub('', title).strip()
+    title = _UNSAFE_FILENAME_RE.sub('', title)
+    title = re.sub(r'\s+', ' ', title).strip('. ')
+    if not title:
+        return None
+    return title[:180]
 
 
 def get_name_ext(
@@ -56,6 +82,10 @@ def get_name_ext(
 
     if name_wo_ext is not None:
         name_wo_ext = unquote(name_wo_ext).strip('. ').replace(' ', '.')
+
+    hellspy_name = _hellspy_stream_name(page_url, content_str)
+    if hellspy_name:
+        name_wo_ext = hellspy_name
 
     if extension is None:
         path_ext = os.path.splitext(urlparse(source_url).path)[1].lstrip('.')

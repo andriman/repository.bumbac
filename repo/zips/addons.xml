@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addons><addon id="plugin.video.bacprehrajto" version="2.0.5" name="[COLOR cyan]Přehraj.to[/COLOR]" provider-name="Bac0001">
+<addons><addon id="plugin.video.bacprehrajto" version="2.0.6" name="[COLOR cyan]Přehraj.to[/COLOR]" provider-name="Bac0001">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.module.requests" version="2.22.0" />
@@ -11,6 +11,14 @@
         <provides>executable</provides>
     </extension>
     <extension point="xbmc.service" library="service.py" start="startup" />
+    <extension point="kodi.context.item">
+        <menu id="kodi.core.main">
+            <item library="context_search.py">
+                <label>Hledat v Přehraj.to</label>
+                <visible>Addon.SettingBool(plugin.video.bacprehrajto,context_menu_search) + [String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season)]</visible>
+            </item>
+        </menu>
+    </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="cs">[COLOR cyan]Přehraj.to[/COLOR]</summary>
         <description lang="cs">Vyhledávání, přehrávání, stahování filmů a seriálů ze serveru Přehraj.to</description>
@@ -36,4 +44,28 @@
         <fanart>fanart.jpg</fanart>
     </assets>
   </extension>
+</addon><addon id="service.subtitles.bb.edna.cz" name="Edna.cz [BB]" version="1.0.1" provider-name="BumBac">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0" />
+		<import addon="script.module.simplejson" version="3.17.0" />
+	</requires>
+	<extension point="xbmc.subtitle.module" library="service.py" />
+	<extension point="xbmc.service" library="monitor.py" start="login" />
+	<extension point="xbmc.addon.metadata">
+		<summary>Edna.cz [BB]</summary>
+		<description lang="en_GB">Search and download Czech and Slovak subtitles from edna.cz and Titulky.com.</description>
+		<description lang="cs_CZ">Vyhledávání a stahování českých a slovenských titulků z edna.cz a Titulky.com.</description>
+		<description lang="sk_SK">Vyhľadávanie a sťahovanie českých a slovenských titulkov z edna.cz a Titulky.com.</description>
+	</extension>
+</addon><addon id="service.subtitles.bb.titulky.com" name="Titulky.com [BB]" version="1.0.1" provider-name="BumBac">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0" />
+	</requires>
+	<extension point="xbmc.subtitle.module" library="service.py" />
+	<extension point="xbmc.addon.metadata">
+		<summary>Titulky.com [BB]</summary>
+		<description lang="en_GB">Search and download Czech and Slovak subtitles from Titulky.com.</description>
+		<description lang="cs_CZ">Vyhledávání a stahování českých a slovenských titulků z Titulky.com.</description>
+		<description lang="sk_SK">Vyhľadávanie a sťahovanie českých a slovenských titulkov z Titulky.com.</description>
+	</extension>
 </addon></addons>

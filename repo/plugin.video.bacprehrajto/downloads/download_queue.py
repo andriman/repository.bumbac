@@ -11,12 +11,14 @@ import xbmcvfs
 from common import (
     addon,
     g_download_max_simultaneous,
+    g_hellspy_allow_parallel_downloads,
     g_prehrajto_allow_parallel_downloads,
     g_sledujteto_allow_parallel_downloads,
 )
 
 PROVIDER_PREHRAJTO = 'prehrajto'
 PROVIDER_SLEDUJTETO = 'sledujteto'
+PROVIDER_HELLSPY = 'hellspy'
 
 STATUS_PENDING = 'pending'
 STATUS_RUNNING = 'running'
@@ -72,6 +74,8 @@ class DownloadJob:
 
 def detect_provider(page_url: str) -> str:
     url_lower = page_url.lower()
+    if 'hellspy' in url_lower:
+        return PROVIDER_HELLSPY
     if 'sledujteto' in url_lower:
         return PROVIDER_SLEDUJTETO
     return PROVIDER_PREHRAJTO
@@ -271,6 +275,8 @@ def running_jobs(jobs: Optional[List[DownloadJob]] = None) -> List[DownloadJob]:
 def provider_allows_parallel(provider: str) -> bool:
     if provider == PROVIDER_SLEDUJTETO:
         return g_sledujteto_allow_parallel_downloads
+    if provider == PROVIDER_HELLSPY:
+        return g_hellspy_allow_parallel_downloads
     return g_prehrajto_allow_parallel_downloads
 
 

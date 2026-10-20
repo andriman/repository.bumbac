@@ -3,6 +3,7 @@ from typing import Optional
 from urllib.parse import quote
 
 from common import get_headers, get_prehrajto_base
+from providers.prehrajto.auth import refresh_premium_from_html
 from providers.browsing_context import remember_provider_page
 from utils.utils import dprint
 
@@ -29,6 +30,7 @@ class PagePrefetch:
                 )
                 remember_provider_page(res.url)
                 html = res.content
+                refresh_premium_from_html(html)
                 with self._lock:
                     self._page = page_num
                     self._html = html

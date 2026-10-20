@@ -1,0 +1,5 @@
+v1.0.0 (19.10.2026)
+- doplnek pro Titulky.com
+- filmy pres fulltext, serialy pres stranku serialu, navrhy a sezonu
+- bezpecnostni kod, cekani pro neprihlasene navstevniky a mezipamet stazenych zipu
+- kdyz hledani nic nenajde, nabidka kratsich nazvu nebo vlastniho textu

@@ -1,0 +1,163 @@
+msgid ""
+msgstr ""
+
+msgctxt "#32003"
+msgid "Select TV Show"
+msgstr ""
+
+msgctxt "#32004"
+msgid "Select file"
+msgstr ""
+
+msgctxt "#32100"
+msgid "Addon is only for czech and slovak subtitles. Check the settings of the language for which you want to download subtitles."
+msgstr ""
+
+msgctxt "#32101"
+msgid "Open settings?"
+msgstr ""
+
+msgctxt "#32110"
+msgid "Use manual search string"
+msgstr ""
+
+msgctxt "#32111"
+msgid "Enter series number"
+msgstr ""
+
+msgctxt "#32112"
+msgid "Enter episode number"
+msgstr ""
+
+msgctxt "#32900"
+msgid "Login Details"
+msgstr ""
+
+msgctxt "#32901"
+msgid "Nick/Username"
+msgstr ""
+
+msgctxt "#32902"
+msgid "Password"
+msgstr ""
+
+msgctxt "#32905"
+msgid "Invalid login detalis"
+msgstr ""
+
+msgctxt "#32906"
+msgid "Titulky.com reached the daily download limit for this address. Try again later."
+msgstr ""
+
+msgctxt "#32910"
+msgid "Searching"
+msgstr ""
+
+msgctxt "#32912"
+msgid "Czech subtitles"
+msgstr ""
+
+msgctxt "#32913"
+msgid "Slovak subtitles"
+msgstr ""
+
+msgctxt "#32911"
+msgid "Use text in brackets as search pattern and normalize"
+msgstr ""
+
+msgctxt "#32914"
+msgid "Clean the title before search: drop brackets, treat _ . + - as spaces, and cut the name off at a rip tag (1080p, BluRay, and similar)."
+msgstr ""
+
+msgctxt "#32920"
+msgid "Cache"
+msgstr ""
+
+msgctxt "#32921"
+msgid "Clear cache after (minutes)"
+msgstr ""
+
+msgctxt "#32941"
+msgid "Downloading from Titulky.com"
+msgstr ""
+
+msgctxt "#32942"
+msgid "Waiting %s seconds. Titulky.com adds this wait for visitors who are not signed in or premium."
+msgstr ""
+
+msgctxt "#32943"
+msgid "Type the security code"
+msgstr ""
+
+msgctxt "#32944"
+msgid "The security code was wrong. Try again."
+msgstr ""
+
+msgctxt "#32945"
+msgid "OK"
+msgstr ""
+
+msgctxt "#32946"
+msgid "Cancel"
+msgstr ""
+
+msgctxt "#32947"
+msgid "Select search title"
+msgstr ""
+
+msgctxt "#32948"
+msgid "Custom search"
+msgstr ""
+
+msgctxt "#32949"
+msgid "...Addon settings..."
+msgstr ""
+
+msgctxt "#32950"
+msgid "When a subtitle link points to Titulky.com"
+msgstr ""
+
+msgctxt "#32951"
+msgid "End in Error"
+msgstr ""
+
+msgctxt "#32952"
+msgid "Follow the link"
+msgstr ""
+
+msgctxt "#32953"
+msgid "Clear Search Flow"
+msgstr ""
+
+msgctxt "#32954"
+msgid "End in Error: show a notice and skip that link. Follow the link: download the subtitle from that Titulky.com page. Clear Search Flow: skip that page and search Titulky.com for this episode's rips."
+msgstr ""
+
+msgctxt "#32955"
+msgid "This subtitle link points to Titulky.com. The addon is set to stop instead of opening it."
+msgstr ""
+
+msgctxt "#32956"
+msgid "Clear cache"
+msgstr ""
+
+msgctxt "#32957"
+msgid "Delete the saved subtitle pages and downloaded archives now."
+msgstr ""
+
+msgctxt "#32958"
+msgid "Cache cleared."
+msgstr ""
+
+msgctxt "#32959"
+msgid "Select title"
+msgstr ""
+
+msgctxt "#32960"
+msgid "%s at Titulky.com. Click to continue"
+msgstr ""
+
+msgctxt "#32967"
+msgid "Edna.cz has no such title"
+msgstr ""
+

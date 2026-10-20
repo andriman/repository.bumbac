@@ -53,35 +53,44 @@ def highlight_datum_vysilani_line_orange(plot: str) -> str:
 
 
 def extract_upload_date_raw_from_listing_card(link_tag: Any) -> Optional[str]:
-    """Walk up from the video link and find Datum nahrání text (HTML or visible)."""
-    node = link_tag
-    for _ in range(16):
-        if node is None:
+    """Find Datum nahrání on the listing card (avoid str(node) on large parents — very slow)."""
+    card = link_tag
+    for _ in range(8):
+        parent = getattr(card, 'parent', None)
+        if parent is None:
             break
-        blob = str(node)
-        for pattern in (
-            r'Datum nahr.n.:</span>\s*<span>([^<]+)</span>',
-            r'Datum nahr[^:]*:</span>\s*<span>([^<]+)</span>',
+        card = parent
+        name = getattr(parent, 'name', None)
+        classes = parent.get('class') or []
+        if name in ('article', 'div', 'li') and any(
+            'video' in c or 'file' in c for c in classes
         ):
-            u = find_pattern(blob, pattern)
-            if u:
-                return u.strip()
-        try:
-            text = node.get_text(" ", strip=True)
-        except Exception:
-            text = ""
-        m = re.search(
-            r"Datum\s+nahr[^\d]{0,40}(\d{1,2}\.\s*\d{1,2}\.\s*\d{4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?)",
-            text,
-            re.IGNORECASE,
-        )
-        if m:
-            return m.group(1).strip()
-        node = getattr(node, "parent", None)
+            break
+
+    for pattern in (
+        r'Datum nahr.n.:</span>\s*<span>([^<]+)</span>',
+        r'Datum nahr[^:]*:</span>\s*<span>([^<]+)</span>',
+    ):
+        u = find_pattern(str(card), pattern)
+        if u:
+            return u.strip()
+
+    try:
+        text = card.get_text(' ', strip=True)
+    except Exception:
+        text = ''
+    m = re.search(
+        r"Datum\s+nahr[^\d]{0,40}(\d{1,2}\.\s*\d{1,2}\.\s*\d{4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?)",
+        text,
+        re.IGNORECASE,
+    )
+    if m:
+        return m.group(1).strip()
     return None
 
 
 LISTING_UPLOAD_PROP = "PrehrajListingUploadRaw"
+LISTING_THUMB_PROP = "PrehrajListingThumbUrl"
 
 
 def maybe_highlight_fake_stream_in_listitem(

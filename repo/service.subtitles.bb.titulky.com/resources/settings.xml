@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="32910">
+      <setting id="search_czech" type="bool" label="32912" default="true"/>
+      <setting id="search_slovak" type="bool" label="32913" default="true"/>
+      <setting id="search_title_in_brackets" type="bool" label="32911" default="true"/>
+      <setting id="try_cleanup_title" type="bool" label="32914" default="true" />
+    </category>
+    <category label="32920">
+      <setting id="cache_minutes" type="slider" label="32921" default="10" range="1,1,60" option="int"/>
+    </category>
+</settings>

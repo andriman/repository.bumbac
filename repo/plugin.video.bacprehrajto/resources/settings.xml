@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <settings>
 	<category label="Nastavení">
-        <setting label="Počet hledaných videí" type="number" id="ls" default="50"/>
         <setting label="Maximum duplicit" type="number" id="max_duplicities" default="2"/>
         <setting label="Výběr kvality" type="enum" id="quality_selector" values="Komprimovaná|Max|Vybrat" default="Komprimovaná"/>
         <setting label="Zkrátit název titulu odprostřed" type="bool" id="truncate_titles"/>
         <setting label="Zvýraznit pravděpodobně falešné streamy (nahrání před vysíláním)" type="bool" id="highlight_fake_streams" default="false"/>
         <setting label="Složka pro knihovnu" type="folder" id="library" default =""/>
         <setting label="Rozbalit akce v kontextové nabídce" type="bool" id="unpack_context_menu" default="false"/>
+        <setting label="Zobrazit záhlaví zdrojů" type="bool" id="display_provider_headers" default="true"/>
+        <setting label="Krátké názvy zdrojů" type="bool" id="short_provider_names" default="true"/>
+        <setting id="ls" type="number" default="20" visible="false"/>
+        <setting id="search_max_pages" type="number" default="3" visible="false"/>
+	</category>
+	<category label="Integrace">
+        <setting type="lsep" label="Kontextová nabídka (knihovna / jiné addony)"/>
+        <setting label="Hledat v Přehraj.to z kontextové nabídky" type="bool" id="context_menu_search" default="true"/>
+        <setting type="lsep" label="TMDB Helper"/>
+        <setting label="Nainstalovat přehrávač do TMDB Helper" type="action" action="RunScript(special://home/addons/plugin.video.bacprehrajto/tmdb_helper_player.py,install)" option="close"/>
 	</category>
 	<category label="Stahování">
         <setting label="Složka pro stahování" type="folder" id="download" default=""/>
@@ -18,16 +27,63 @@
         <setting label="Premium titulky pouze pokud stránka nemá titulky" type="bool" id="prehrajto_premium_subs_if_none" default="true" enable="eq(-1,true)"/>
         <setting label="Sledujteto.cz" type="lsep"/>
         <setting label="Povolit více souběžných stahování" type="bool" id="sledujteto_allow_parallel_downloads" default="false"/>
+        <setting label="HellSpy" type="lsep"/>
+        <setting label="Povolit více souběžných stahování" type="bool" id="hellspy_allow_parallel_downloads" default="false"/>
 	</category>
 	<category label="Zdroje">
-        <setting id="is_provider_prehrajto_enabled" type="bool" label="Přehraj.to" default="true" />
+        <setting label="Prehraj.to" type="lsep"/>
+        <setting id="is_provider_prehrajto_enabled" type="bool" label="Povolit zdroj" default="true" />
         <setting label="Doména Prehraj.to" type="enum" id="prehrajto_domain" values="prehrajto.cz|prehraj.to" default="prehrajto.cz" enable="eq(-1,true)"/>
-        <setting id="is_provider_sledujteto_enabled" type="bool" label="Sledujteto.cz" default="true" />
+        <setting label="Počet hledaných videí" type="number" id="prehrajto_ls" default="20" enable="eq(-2,true)"/>
+        <setting label="Maximum stránek hledání" type="number" id="prehrajto_search_max_pages" default="3" enable="eq(-3,true)"/>
+        <setting label="Přehraná videa" type="bool" id="prehrajto_account_show_played" default="true" enable="eq(-4,true)"/>
+        <setting label="Videa, co se mi líbila" type="bool" id="prehrajto_account_show_liked" default="true" enable="eq(-5,true)"/>
+        <setting label="Nahraná videa" type="bool" id="prehrajto_account_show_uploaded" default="true" enable="eq(-6,true)"/>
+        <setting label="Oblíbená videa" type="bool" id="prehrajto_account_show_favorites" default="true" enable="eq(-7,true)"/>
+        <setting label="Zobrazit jméno účtu v menu" type="bool" id="prehrajto_account_show_name" default="false" enable="eq(-8,true)"/>
+        <setting label="Sledujteto.cz" type="lsep"/>
+        <setting id="is_provider_sledujteto_enabled" type="bool" label="Povolit zdroj" default="true" />
+        <setting label="Počet hledaných videí" type="number" id="sledujteto_ls" default="20" enable="eq(-1,true)"/>
+        <setting label="Maximum stránek hledání" type="number" id="sledujteto_search_max_pages" default="3" enable="eq(-2,true)"/>
+        <setting label="Zobrazit jméno účtu v menu" type="bool" id="sledujteto_account_show_name" default="false" enable="eq(-3,true)"/>
+        <setting label="Moje videa" type="bool" id="sledujteto_account_show_my_videos" default="true" enable="eq(-4,true)"/>
+        <setting label="Přehrát později" type="bool" id="sledujteto_account_show_watchlist" default="true" enable="eq(-5,true)"/>
+        <setting label="HellSpy" type="lsep"/>
+        <setting id="is_provider_hellspy_enabled" type="bool" label="Povolit zdroj" default="true" />
+        <setting label="Doména HellSpy" type="text" id="hellspy_domain" default="www.hellspy.to" enable="eq(-1,true)"/>
+        <setting label="Počet hledaných videí" type="number" id="hellspy_ls" default="20" enable="eq(-2,true)"/>
+        <setting label="Maximum stránek hledání" type="number" id="hellspy_search_max_pages" default="3" enable="eq(-3,true)"/>
+        <setting label="Zobrazit jméno účtu v menu" type="bool" id="hellspy_account_show_name" default="false" enable="eq(-4,true)"/>
+        <setting label="Moje videa" type="bool" id="hellspy_account_show_my_videos" default="true" enable="eq(-5,true)"/>
+        <setting type="lsep" label="Pořadí výsledků"/>
+        <setting label="Pořadí zdrojů" type="text" id="provider_order_info" default="1. Prehraj.to, 2. HellSpy, 3. Sledujteto.cz" enable="false"/>
+        <setting id="provider_order" type="text" default="prehrajto,hellspy,sledujteto" visible="false"/>
+        <setting label="Prehraj.to: posunout výše" type="action" action="RunScript(special://home/addons/plugin.video.bacprehrajto/provider_order.py,up,prehrajto)"/>
+        <setting label="Prehraj.to: posunout níže" type="action" action="RunScript(special://home/addons/plugin.video.bacprehrajto/provider_order.py,down,prehrajto)"/>
+        <setting label="Sledujteto.cz: posunout výše" type="action" action="RunScript(special://home/addons/plugin.video.bacprehrajto/provider_order.py,up,sledujteto)"/>
+        <setting label="Sledujteto.cz: posunout níže" type="action" action="RunScript(special://home/addons/plugin.video.bacprehrajto/provider_order.py,down,sledujteto)"/>
+        <setting label="HellSpy: posunout výše" type="action" action="RunScript(special://home/addons/plugin.video.bacprehrajto/provider_order.py,up,hellspy)"/>
+        <setting label="HellSpy: posunout níže" type="action" action="RunScript(special://home/addons/plugin.video.bacprehrajto/provider_order.py,down,hellspy)"/>
+	</category>
+	<category label="TMDB">
+        <setting label="Languages (comma-separated, e.g. en,cs)" type="text" id="tmdb_languages" default="en,cs"/>
+        <setting label="Default language" type="text" id="tmdb_default_language" default="en"/>
+        <setting label="Zobrazit přepínač jazyka v seznamech filmů a epizod" type="bool" id="tmdb_show_language_row" default="true"/>
+        <setting type="text" id="tmdb_active_language" default="en" visible="false"/>
+        <setting type="lsep" label="Pohledy (View Mode)"/>
+        <setting label="Pamatovat pohled podle typu obsahu (filmy/seriály/série/epizody)" type="bool" id="viewmode_remember" default="true"/>
+        <setting label="Uložený pohled – filmy" type="number" id="viewmode_movies" default="0" enable="eq(-1,true)"/>
+        <setting label="Uložený pohled – seriály" type="number" id="viewmode_tvshows" default="0" enable="eq(-2,true)"/>
+        <setting label="Uložený pohled – série" type="number" id="viewmode_seasons" default="0" enable="eq(-3,true)"/>
+        <setting label="Uložený pohled – epizody" type="number" id="viewmode_episodes" default="0" enable="eq(-4,true)"/>
+        <setting type="number" id="viewmode_videos" default="0" visible="false"/>
 	</category>
 	<category label="NSFW">
         <setting id="developer_password" type="text" default="" visible="false"/>
         <setting id="is_nsfw_enabled" type="bool" label="Include NSFW videos" default="false" visible="eq(-1,bumbacpass)"/>
         <setting id="nsfw_filter_keywords" type="text" label="Další filtry (oddělené čárkou)" default="" visible="eq(-2,bumbacpass)"/>
+        <setting id="nsfw_filter_exceptions" type="text" label="Výjimky (oddělené čárkou)" default="" visible="eq(-3,bumbacpass)"/>
+        <setting label="Jak funguje filtrování" type="action" action="RunPlugin(plugin://plugin.video.bacprehrajto/?action=nsfw_filter_help)" visible="eq(-4,bumbacpass)"/>
 	</category>
 	<category label="Accounts">
         <setting label="Prehraj.to" type="lsep"/>
@@ -38,10 +94,13 @@
         <setting label="Email" type="text" id="sledujteto_email" default=""/>
         <setting label="Heslo" type="text" id="sledujteto_password" option="hidden" default=""/>
         <setting label="Přihlásit automaticky" type="bool" id="sledujteto_auto_login" default="true"/>
+        <setting label="HellSpy" type="lsep"/>
+        <setting label="Email" type="text" id="hellspy_email" default=""/>
+        <setting label="Heslo" type="text" id="hellspy_password" option="hidden" default=""/>
+        <setting label="Přihlásit automaticky" type="bool" id="hellspy_auto_login" default="true"/>
 	</category>
 	<category label="Requests">
         <setting label="Prodleva mezi stránkami hledání (s, 0 = vypnuto)" type="number" id="search_page_delay" default="3"/>
-        <setting label="Maximum stránek hledání" type="number" id="search_max_pages" default="20"/>
 	</category>
 	<category label="User-Agent">
         <setting label="Předvolba User-Agent" type="enum" id="user_agent_preset" values="Firefox (Windows)|Firefox (Linux)|Chrome (Windows)|Chrome (macOS)|Chrome (Android)|Safari (iOS)|Edge (Windows)" default="Firefox (Windows)"/>
@@ -49,16 +108,23 @@
         <setting label="User-Agent" type="text" id="user_agent" default="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0" enable="eq(-1,true)"/>
 	</category>
 	<category label="Cache">
-        <setting label="Cache hledání (minuty, 0 = vypnuto; návrat z přehrávání vždy z cache)" type="number" id="search_cache_ttl" default="5"/>
+        <setting label="Povolit cache" type="bool" id="search_cache_enabled" default="true"/>
+        <setting label="Cache hledání (minuty, 0 = vypnuto; návrat z přehrávání vždy z cache)" type="number" id="search_cache_ttl" default="5" enable="eq(-1,true)"/>
+        <setting label="Velikost cache hledání" type="text" id="search_cache_size_info" default="0 B (0 souborů)" enable="false" visible="eq(-2,true)"/>
+        <setting label="Vymazat cache hledání" type="action" action="RunScript(special://home/addons/plugin.video.bacprehrajto/cache_manage.py,clear_search)" option="close" visible="eq(-3,true)"/>
         <setting type="lsep" label="Cache titulků (přehrávání)"/>
         <setting label="Velikost cache titulků" type="text" id="subtitle_cache_size_info" default="0 B (0 souborů)" enable="false"/>
-        <setting label="Vymazat cache titulků" type="action" action="RunScript(special://home/addons/plugin.video.bacprehrajto/subtitle_cache_manage.py,clear)" option="close"/>
+        <setting label="Vymazat cache titulků" type="action" action="RunScript(special://home/addons/plugin.video.bacprehrajto/cache_manage.py,clear_subtitles)" option="close"/>
+        <setting type="lsep" label="Celkem"/>
+        <setting label="Celková velikost cache" type="text" id="total_cache_size_info" default="0 B (0 souborů)" enable="false"/>
+        <setting label="Vymazat veškerou cache" type="action" action="RunScript(special://home/addons/plugin.video.bacprehrajto/cache_manage.py,clear_all)" option="close"/>
 	</category>
 	<category label="Debug">
         <setting label="Debug info" type="bool" id="is_debug_info_on" default ="false"/>
         <setting label="Povolit logování" type="bool" id="is_debug_logs_enabled" default="false"/>
         <setting label="Developer password" type="text" id="developer_password" option="hidden" default=""/>
-        <setting id="developer_mode_notice" type="text" label="Developer features enabled" default="Ano" enable="false" visible="eq(-1,bumbacpass)"/>
+        <setting label="Povolit CSFD v menu" type="bool" id="is_csfd_enabled" default="false" visible="eq(-1,bumbacpass)"/>
+        <setting id="developer_mode_notice" type="text" label="Developer features enabled" default="Ano" enable="false" visible="eq(-2,bumbacpass)"/>
 	</category>
   <category label="Donate">
     <setting id="paypal" type="action" label="PayPal" option="close" action="RunScript(special://home/addons/plugin.video.bacprehrajto/donate.py)" />

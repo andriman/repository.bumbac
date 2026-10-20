@@ -1,0 +1,8 @@
+v1.0.0 (19.10.2026)
+- vlastni doplnek Edna.cz [BB], vychazi z service.subtitles.edna.cz od Beam
+- prihlaseni na edna.cz a vyber cestiny a slovenstiny v nastaveni
+- titulky.com: nabidka ripu, captcha, kratsi cekani a mezipamet stazenych zipu
+- soubory z edna.cz zustavaji prime stazeni archivu
+- dalsi stazene titulky se pridavaji do nabidky prehravace
+- kdyz vicerovne hledani nic nenajde, nabidka kratsich nazvu nebo vlastniho textu
+- bez odesilani statistik
