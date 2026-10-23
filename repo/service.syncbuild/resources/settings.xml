@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+  <category label="General">
+    <setting type="lsep" label="Dropbox app permissions"/>
+    <setting type="lsep" label="Enable these on the Permissions tab before authorizing:"/>
+    <setting type="lsep" label="files.metadata.read"/>
+    <setting type="lsep" label="files.content.read"/>
+    <setting type="lsep" label="files.content.write"/>
+    <setting id="dropbox_key" type="text" label="Dropbox app key" default=""/>
+    <setting id="dropbox_secret" type="text" label="Dropbox app secret" default="" option="hidden"/>
+    <setting id="device_name" type="text" label="Device name" default="PC"/>
+    <setting id="history" type="number" label="Snapshots to keep" default="3"/>
+    <setting id="auto_check" type="bool" label="Automatic recheck" default="true"/>
+  </category>
+</settings>
