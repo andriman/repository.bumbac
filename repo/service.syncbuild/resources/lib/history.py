@@ -25,8 +25,8 @@ def display_time(snapshot_id):
     if not valid_id(snapshot_id):
         return snapshot_id or ""
     day, clock = snapshot_id[:-1].split("T")
-    hour, minute, second = clock.split("-")
-    return "%s %s:%s:%s UTC" % (day, hour, minute, second)
+    hour, minute, _second = clock.split("-")
+    return "%s %s:%s UTC" % (day, hour, minute)
 
 
 def choose_newer(found, local_id, last_marker):
