@@ -11,10 +11,15 @@ SHARED_FILES = (
 )
 TMDB_SETTINGS = "addon_data/plugin.video.themoviedb.helper/settings.xml"
 SHORTCUT_ROOT = "addon_data/script.skinvariables/nodes/"
+MENUS = "addon_data/script.skinshortcuts/"
 PARTS = ("skin", "shortcuts", "tmdb", "sources", "favourites")
 _SKIN_ID = re.compile(r"skin\.[A-Za-z0-9._-]+")
 _SKIN_SETTINGS = re.compile(r"^addon_data/(skin\.[A-Za-z0-9._-]+)/settings\.xml$")
 _SHORTCUT = re.compile(r"^addon_data/script\.skinvariables/nodes/(skin\.[A-Za-z0-9._-]+)/")
+_MENU_PROPERTIES = re.compile(r"^addon_data/script\.skinshortcuts/(skin\.[A-Za-z0-9._-]+)\.properties$")
+_MENU_PREFIXED = re.compile(
+    r"^addon_data/script\.skinshortcuts/(skin\.[A-Za-z0-9._-]+)-[^/]+\.DATA\.xml$"
+)
 PROFILE = "{profile}"
 PROFILE_ENC = "{profile_enc}"
 
@@ -46,6 +51,7 @@ def shortcut_dir(skin_id):
 def skin_id_from_path(name):
     rel = normalize(name)
     match = _SKIN_SETTINGS.match(rel) or _SHORTCUT.match(rel)
+    match = match or _MENU_PROPERTIES.match(rel) or _MENU_PREFIXED.match(rel)
     if not match:
         return None
     skin_id = match.group(1)
@@ -54,11 +60,53 @@ def skin_id_from_path(name):
     return skin_id
 
 
+def classify_menu(name):
+    rel = normalize(name)
+    if not rel.startswith(MENUS):
+        return None, None
+    filename = rel[len(MENUS):]
+    if not filename or "/" in filename:
+        return None, None
+    if filename == "settings.xml":
+        return "settings", None
+    match = _MENU_PROPERTIES.match(rel)
+    if match:
+        return "properties", match.group(1)
+    match = _MENU_PREFIXED.match(rel)
+    if match:
+        return "prefixed", match.group(1)
+    if filename.endswith(".DATA.xml"):
+        return "shared", None
+    return None, None
+
+
+def menu_for_skin(name, skin_id):
+    kind, owner = classify_menu(name)
+    if kind in ("settings", "shared"):
+        return True
+    return kind in ("properties", "prefixed") and owner == skin_id
+
+
+def skin_uses_menus(userdata, skin_id):
+    folder = os.path.join(userdata, *MENUS.strip("/").split("/"))
+    if not os.path.isdir(folder):
+        return False
+    prefix = skin_id + "-"
+    for filename in os.listdir(folder):
+        if filename in (skin_id + ".properties", skin_id + ".hash"):
+            return True
+        if filename.startswith(prefix) and filename.endswith(".DATA.xml"):
+            return True
+    return False
+
+
 def allowed(name):
     rel = normalize(name)
     if not rel or any(part in ("", ".", "..") for part in rel.split("/")):
         return False
     if rel in SHARED_FILES:
+        return True
+    if classify_menu(rel)[0]:
         return True
     skin_id = skin_id_from_path(rel)
     if not skin_id:
@@ -78,7 +126,7 @@ def part_for(name):
         return "favourites"
     if _SKIN_SETTINGS.match(rel):
         return "skin"
-    if _SHORTCUT.match(rel):
+    if _SHORTCUT.match(rel) or classify_menu(rel)[0]:
         return "shortcuts"
     return None
 
@@ -204,17 +252,24 @@ def iter_build_files(userdata, skin_id):
         if os.path.isfile(path):
             yield rel, path
     root = os.path.join(userdata, *shortcut_dir(skin_id).strip("/").split("/"))
-    if not os.path.isdir(root):
+    if os.path.isdir(root):
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames.sort()
+            for filename in sorted(filenames):
+                if filename.startswith(".") or filename.lower() == "thumbs.db":
+                    continue
+                full = os.path.join(dirpath, filename)
+                rel = normalize(os.path.relpath(full, userdata))
+                if allowed(rel) and os.path.isfile(full):
+                    yield rel, full
+    menus = os.path.join(userdata, *MENUS.strip("/").split("/"))
+    if not skin_uses_menus(userdata, skin_id) or not os.path.isdir(menus):
         return
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames.sort()
-        for filename in sorted(filenames):
-            if filename.startswith(".") or filename.lower() == "thumbs.db":
-                continue
-            full = os.path.join(dirpath, filename)
-            rel = normalize(os.path.relpath(full, userdata))
-            if allowed(rel) and os.path.isfile(full):
-                yield rel, full
+    for filename in sorted(os.listdir(menus)):
+        full = os.path.join(menus, filename)
+        rel = MENUS + filename
+        if menu_for_skin(rel, skin_id) and os.path.isfile(full):
+            yield rel, full
 
 
 def pack(userdata, home, skin_id, ignore_case=None):
@@ -274,6 +329,69 @@ def _prune(userdata, keep, parts, skin_ids):
                 folder = os.path.join(dirpath, dirname)
                 if os.path.isdir(folder) and not os.listdir(folder):
                     os.rmdir(folder)
+    _prune_menus(userdata, keep, skin_ids)
+
+
+def _menu_targets(names, skin_id=None):
+    skins = []
+    shared = False
+    present = False
+    for name in names:
+        kind, owner = classify_menu(name)
+        if not kind:
+            continue
+        if kind == "settings":
+            continue
+        present = True
+        if kind == "shared":
+            shared = True
+        elif owner and owner not in skins:
+            skins.append(owner)
+    if shared and valid_skin_id(skin_id) and skin_id not in skins:
+        skins.append(skin_id)
+    return present, shared, skins
+
+
+def _prune_menus(userdata, keep, skin_ids):
+    present, shared, skins = _menu_targets(keep, None)
+    if not present:
+        return
+    if shared:
+        for skin_id in skin_ids:
+            if valid_skin_id(skin_id) and skin_id not in skins:
+                skins.append(skin_id)
+    folder = os.path.join(userdata, *MENUS.strip("/").split("/"))
+    if os.path.isdir(folder):
+        for filename in os.listdir(folder):
+            rel = MENUS + filename
+            if rel in keep:
+                continue
+            kind, owner = classify_menu(rel)
+            remove = False
+            if kind == "shared" and shared:
+                remove = True
+            elif kind == "settings":
+                remove = False
+            elif kind in ("properties", "prefixed") and owner in skins:
+                remove = True
+            if remove:
+                _remove_file(userdata, rel)
+    for skin_id in skins:
+        _remove_hash(userdata, skin_id)
+
+
+def _remove_hash(userdata, skin_id):
+    if not valid_skin_id(skin_id):
+        return
+    root = os.path.abspath(userdata)
+    dest = os.path.abspath(os.path.join(root, "addon_data", "script.skinshortcuts", skin_id + ".hash"))
+    try:
+        if os.path.commonpath([root, dest]) != root:
+            return
+    except ValueError:
+        return
+    if os.path.isfile(dest):
+        os.remove(dest)
 
 
 def touch_rebuild(userdata, stamp, skin_id):
