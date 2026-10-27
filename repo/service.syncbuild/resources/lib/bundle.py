@@ -12,7 +12,27 @@ SHARED_FILES = (
 TMDB_SETTINGS = "addon_data/plugin.video.themoviedb.helper/settings.xml"
 SHORTCUT_ROOT = "addon_data/script.skinvariables/nodes/"
 MENUS = "addon_data/script.skinshortcuts/"
-PARTS = ("skin", "shortcuts", "tmdb", "sources", "favourites")
+PARTS = ("skin", "shortcuts", "tmdb", "tmdb_auth", "sources", "favourites")
+AUTH_IDS = frozenset((
+    "trakt_token",
+    "trakt_token_access",
+    "tmdb_user_token",
+    "tmdb_user_token_access",
+    "tvdb_token",
+    "tvdb_token_access",
+    "omdb_apikey",
+    "omdb_apikey_access",
+    "mdblist_apikey",
+    "mdblist_apikey_access",
+    "ratingposterdb_apikey",
+    "ratingposterdb_apikey_access",
+    "gemini_apikey",
+    "gemini_apikey_access",
+))
+_SETTING = re.compile(
+    r'[ \t]*<setting\b[^>]*\bid="([^"]+)"[^>]*(?:/>|>.*?</setting>)',
+    re.DOTALL,
+)
 _SKIN_ID = re.compile(r"skin\.[A-Za-z0-9._-]+")
 _SKIN_SETTINGS = re.compile(r"^addon_data/(skin\.[A-Za-z0-9._-]+)/settings\.xml$")
 _SHORTCUT = re.compile(r"^addon_data/script\.skinvariables/nodes/(skin\.[A-Za-z0-9._-]+)/")
@@ -133,6 +153,51 @@ def part_for(name):
 
 def all_parts():
     return set(PARTS)
+
+
+def _setting_pattern(setting_id):
+    return re.compile(
+        r'[ \t]*<setting\b[^>]*\bid="%s"[^>]*(?:/>|>.*?</setting>)' % re.escape(setting_id),
+        re.DOTALL,
+    )
+
+
+def _auth_blocks(text):
+    blocks = []
+    for match in _SETTING.finditer(text or ""):
+        if match.group(1) in AUTH_IDS:
+            blocks.append(match.group(0).strip("\r\n"))
+    return blocks
+
+
+def _copy_auth(base, source):
+    text = base or "<settings>\n</settings>\n"
+    for setting_id in AUTH_IDS:
+        text = _setting_pattern(setting_id).sub("", text, count=1)
+    blocks = _auth_blocks(source)
+    if not blocks:
+        return text
+    insert = "\n".join(blocks)
+    if "</settings>" in text:
+        return text.replace("</settings>", insert + "\n</settings>", 1)
+    return text + "\n" + insert + "\n"
+
+
+def merge_tmdb(local_text, remote_text, include_settings, include_auth):
+    if include_settings and include_auth:
+        return remote_text
+    if include_settings:
+        return _copy_auth(remote_text, local_text)
+    if include_auth:
+        return _copy_auth(local_text, remote_text)
+    return local_text
+
+
+def _read_text(path):
+    if not path or not os.path.isfile(path):
+        return ""
+    with open(path, "r", encoding="utf-8", newline="") as handle:
+        return handle.read()
 
 
 def snapshot_skin_ids(names, skin_id=None):
@@ -425,9 +490,25 @@ def unpack(blob, userdata, home, rebuild_stamp=None, parts=None, skin_id=None):
         skin_ids = snapshot_skin_ids(names, skin_id)
         payload = {}
         for rel in names:
+            data = archive.read(rel)
+            if rel == TMDB_SETTINGS:
+                want_settings = "tmdb" in selected
+                want_auth = "tmdb_auth" in selected
+                if not want_settings and not want_auth:
+                    continue
+                try:
+                    text = expand_profile(data.decode("utf-8"), home)
+                except UnicodeDecodeError:
+                    if want_settings and want_auth:
+                        payload[rel] = data
+                    continue
+                if not (want_settings and want_auth):
+                    local = _read_text(_destination(userdata, rel))
+                    text = merge_tmdb(local, text, want_settings, want_auth)
+                payload[rel] = text.encode("utf-8")
+                continue
             if part_for(rel) not in selected:
                 continue
-            data = archive.read(rel)
             try:
                 text = expand_profile(data.decode("utf-8"), home)
             except UnicodeDecodeError:

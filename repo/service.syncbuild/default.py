@@ -1,12 +1,13 @@
 import xbmcgui
 
 from resources.lib.dropbox_api import authorize
-from resources.lib.sync import check_newer, manage_builds, upload_current
+from resources.lib.sync import browse_profiles, check_newer, manage_builds, upload_current
 
 ACTIONS = (
     "Upload current build",
     "Check for newer builds",
     "Saved builds",
+    "Other profiles",
     "Authorize Dropbox",
 )
 
@@ -20,6 +21,8 @@ def main():
     elif choice == 2:
         manage_builds()
     elif choice == 3:
+        browse_profiles()
+    elif choice == 4:
         authorize()
 
 

@@ -8,8 +8,8 @@ import xbmcgui
 from resources.lib import dropbox_api
 from resources.lib.bundle import pack, unpack, valid_skin_id
 from resources.lib.history import (
-    ROOT,
     choose_newer,
+    device_folder,
     display_time,
     kept_snapshot_ids,
     manifest_path,
@@ -31,7 +31,7 @@ def _stamp():
 
 LEGACY_SKIN_ID = "skin.arctic.fuse.3"
 LEGACY_SKIN_NAME = "Arctic Fuse 3"
-PART_IDS = ("skin", "shortcuts", "tmdb", "sources", "favourites")
+PART_IDS = ("skin", "shortcuts", "tmdb", "tmdb_auth", "sources", "favourites")
 
 
 def current_skin():
@@ -87,26 +87,29 @@ def choose_parts(skin_name):
         "%s settings" % label,
         "%s shortcuts" % label,
         "TMDbHelper settings",
+        "TMDbHelper sign-in",
         "Sources",
         "Favourites",
     ]
     picked = xbmcgui.Dialog().multiselect(
         "Overwrite",
         labels,
-        preselect=list(range(len(labels))),
+        preselect=[index for index, part in enumerate(PART_IDS) if part != "tmdb_auth"],
     )
     if not picked:
         return None
     return {PART_IDS[index] for index in picked}
 
 
-def _remote_builds(client, local_id):
+def _remote_builds(client, profile, local_id):
     found = []
-    for folder in dropbox_api.list_device_folders(client):
+    for device in dropbox_api.list_profile_devices(client, profile):
+        folder = device["device_id"]
         if folder == local_id:
             continue
+        legacy = device["legacy"]
         try:
-            manifest = dropbox_api.download_json(client, manifest_path(folder))
+            manifest = dropbox_api.download_json(client, manifest_path(profile, folder, legacy))
         except Exception as exc:
             dropbox_api.log("Skipped %s: %s" % (folder, exc))
             continue
@@ -120,11 +123,18 @@ def _remote_builds(client, local_id):
             "device_id": folder,
             "name": manifest.get("device_name") or folder,
             "id": newest["id"],
-            "path": snapshot_path(folder, newest["id"]),
+            "path": snapshot_path(profile, folder, newest["id"], legacy),
             "skin_id": newest["skin_id"],
             "skin_name": newest["skin_name"],
+            "profile": profile,
+            "legacy": legacy,
         })
-    return choose_newer(found, local_id, dropbox_api.last_marker())
+    newest = {}
+    for item in found:
+        current = newest.get(item["device_id"])
+        if current is None or item["id"] > current["id"]:
+            newest[item["device_id"]] = item
+    return choose_newer(list(newest.values()), local_id, dropbox_api.last_marker())
 
 
 def _apply(client, chosen, parts):
@@ -178,7 +188,7 @@ def check_newer(interactive, automatic=False, monitor=None):
         if client is None:
             notice = ("Authorize Dropbox first", True)
         else:
-            candidates = _remote_builds(client, dropbox_api.device_id())
+            candidates = _remote_builds(client, dropbox_api.profile_name(), dropbox_api.device_id())
     except Exception as exc:
         dropbox_api.log(traceback.format_exc())
         notice = (dropbox_api.failure_text(exc, "Could not check Dropbox"), True)
@@ -249,10 +259,11 @@ def upload_current():
                     notice = ("No build files to upload", True)
                 else:
                     local_id = dropbox_api.device_id()
+                    profile = dropbox_api.profile_name()
                     snapshot_id = _stamp()
-                    dropbox_api.upload_bytes(client, snapshot_path(local_id, snapshot_id), blob)
+                    dropbox_api.upload_bytes(client, snapshot_path(profile, local_id, snapshot_id), blob)
                     try:
-                        manifest = dropbox_api.download_json(client, manifest_path(local_id))
+                        manifest = dropbox_api.download_json(client, manifest_path(profile, local_id))
                     except Exception as exc:
                         if "not_found" not in str(exc):
                             raise
@@ -270,22 +281,23 @@ def upload_current():
                             })
                         else:
                             records.append(by_id[kept_id])
-                    dropbox_api.upload_json(client, manifest_path(local_id), {
+                    dropbox_api.upload_json(client, manifest_path(profile, local_id), {
                         "device_id": local_id,
                         "device_name": dropbox_api.device_name(),
                         "snapshots": records,
                     })
                     dropbox_api.set_last_marker(snapshot_id)
                     try:
+                        folder = device_folder(profile, local_id)
                         for old_id in removed:
-                            dropbox_api.delete_path(client, snapshot_path(local_id, old_id))
-                        for entry in dropbox_api.list_folder(client, "%s/%s" % (ROOT, local_id)):
+                            dropbox_api.delete_path(client, snapshot_path(profile, local_id, old_id))
+                        for entry in dropbox_api.list_folder(client, folder):
                             name = getattr(entry, "name", "")
                             if not name.endswith(".zip"):
                                 continue
                             old_id = name[:-4]
                             if old_id not in kept:
-                                target = getattr(entry, "path_display", None) or snapshot_path(local_id, old_id)
+                                target = getattr(entry, "path_display", None) or snapshot_path(profile, local_id, old_id)
                                 dropbox_api.delete_path(client, target)
                     except Exception:
                         dropbox_api.log(traceback.format_exc())
@@ -307,32 +319,36 @@ def startup_check(monitor):
     check_newer(interactive=True, automatic=True, monitor=monitor)
 
 
-def _read_manifests(client):
+def _read_manifests(client, profile):
     found = []
-    for folder in dropbox_api.list_device_folders(client):
+    for device in dropbox_api.list_profile_devices(client, profile):
+        folder = device["device_id"]
+        legacy = device["legacy"]
         try:
-            manifest = dropbox_api.download_json(client, manifest_path(folder))
+            manifest = dropbox_api.download_json(client, manifest_path(profile, folder, legacy))
         except Exception as exc:
             dropbox_api.log("Skipped %s: %s" % (folder, exc))
             continue
         if isinstance(manifest, dict):
-            found.append((folder, manifest))
+            found.append((folder, legacy, manifest))
     return found
 
 
-def _all_snapshots(client, local_id):
+def _all_snapshots(client, profile, local_id):
     rows = []
-    for folder, manifest in _read_manifests(client):
+    for folder, legacy, manifest in _read_manifests(client, profile):
         name = manifest.get("device_name") or folder
         for snapshot in _snapshot_records(manifest):
             rows.append({
                 "device_id": folder,
                 "name": name,
                 "id": snapshot["id"],
-                "path": snapshot_path(folder, snapshot["id"]),
+                "path": snapshot_path(profile, folder, snapshot["id"], legacy),
                 "skin_id": snapshot["skin_id"],
                 "skin_name": snapshot["skin_name"],
                 "local": folder == local_id,
+                "profile": profile,
+                "legacy": legacy,
             })
     rows.sort(key=lambda item: item["id"], reverse=True)
     return rows
@@ -375,9 +391,17 @@ def _snapshot_ids(manifest):
     ]
 
 
+def _item_location(item):
+    profile = item.get("profile")
+    if not profile:
+        raise ValueError("Profile is not valid")
+    return profile, bool(item.get("legacy"))
+
+
 def _delete_snapshot(item):
     if not valid_device(item.get("device_id")) or not valid_id(item.get("id")):
         raise ValueError("Snapshot is not valid")
+    profile, legacy = _item_location(item)
     dialog = None
     try:
         dialog = _busy("Deleting snapshot")
@@ -385,7 +409,7 @@ def _delete_snapshot(item):
         if client is None:
             raise RuntimeError("Authorize Dropbox first")
         try:
-            manifest = dropbox_api.download_json(client, manifest_path(item["device_id"]))
+            manifest = dropbox_api.download_json(client, manifest_path(profile, item["device_id"], legacy))
         except Exception as exc:
             if "not_found" not in str(exc):
                 raise
@@ -396,43 +420,57 @@ def _delete_snapshot(item):
         ]
         remaining.sort(key=lambda record: record["id"], reverse=True)
         if remaining:
-            dropbox_api.upload_json(client, manifest_path(item["device_id"]), {
+            dropbox_api.upload_json(client, manifest_path(profile, item["device_id"], legacy), {
                 "device_id": item["device_id"],
                 "device_name": item["name"],
                 "snapshots": remaining,
             })
         else:
-            dropbox_api.delete_path(client, manifest_path(item["device_id"]))
-        dropbox_api.delete_path(client, snapshot_path(item["device_id"], item["id"]))
+            dropbox_api.delete_path(client, manifest_path(profile, item["device_id"], legacy))
+        dropbox_api.delete_path(client, snapshot_path(profile, item["device_id"], item["id"], legacy))
     finally:
         if dialog is not None:
             dialog.close()
+
+
+def _wipe_device(client, profile, device_id, legacy):
+    try:
+        manifest = dropbox_api.download_json(client, manifest_path(profile, device_id, legacy))
+    except Exception as exc:
+        if "not_found" not in str(exc):
+            raise
+        manifest = {}
+    for snapshot_id in _snapshot_ids(manifest):
+        dropbox_api.delete_path(client, snapshot_path(profile, device_id, snapshot_id, legacy))
+    dropbox_api.delete_path(client, manifest_path(profile, device_id, legacy))
+    folder = device_folder(profile, device_id, legacy)
+    for entry in dropbox_api.list_folder(client, folder):
+        name = getattr(entry, "name", "")
+        if name == "manifest.json" or name.endswith(".zip"):
+            target = getattr(entry, "path_display", None) or "%s/%s" % (folder, name)
+            dropbox_api.delete_path(client, target)
 
 
 def _delete_device(item):
     device_id = item.get("device_id")
     if not valid_device(device_id):
         raise ValueError("Device is not valid")
+    profile, _legacy = _item_location(item)
     dialog = None
     try:
         dialog = _busy("Deleting snapshots")
         client = dropbox_api.get_client()
         if client is None:
             raise RuntimeError("Authorize Dropbox first")
-        try:
-            manifest = dropbox_api.download_json(client, manifest_path(device_id))
-        except Exception as exc:
-            if "not_found" not in str(exc):
-                raise
-            manifest = {}
-        for snapshot_id in _snapshot_ids(manifest):
-            dropbox_api.delete_path(client, snapshot_path(device_id, snapshot_id))
-        dropbox_api.delete_path(client, manifest_path(device_id))
-        for entry in dropbox_api.list_folder(client, "%s/%s" % (ROOT, device_id)):
-            name = getattr(entry, "name", "")
-            if name == "manifest.json" or name.endswith(".zip"):
-                target = getattr(entry, "path_display", None) or "%s/%s/%s" % (ROOT, device_id, name)
-                dropbox_api.delete_path(client, target)
+        locations = [
+            device["legacy"]
+            for device in dropbox_api.list_profile_devices(client, profile)
+            if device["device_id"] == device_id
+        ]
+        if not locations:
+            locations = [bool(item.get("legacy"))]
+        for legacy in locations:
+            _wipe_device(client, profile, device_id, legacy)
     finally:
         if dialog is not None:
             dialog.close()
@@ -470,10 +508,20 @@ def _manage_one(item):
     return True
 
 
-def manage_builds():
+def _count_label(count, singular, plural):
+    return "%d %s" % (count, singular if count == 1 else plural)
+
+
+def manage_builds(profile=None):
     if not dropbox_api.authorized():
         dropbox_api.notify("Authorize Dropbox first", error=True)
-        return
+        return False
+    try:
+        profile = dropbox_api.profile_name() if profile is None else profile
+    except Exception as exc:
+        dropbox_api.show_failure(dropbox_api.failure_text(exc, "Profile name is not valid"))
+        return False
+    heading = "Saved builds — %s" % profile
     while True:
         dialog = None
         notice = None
@@ -484,7 +532,7 @@ def manage_builds():
             if client is None:
                 notice = ("Authorize Dropbox first", True)
             else:
-                rows = _all_snapshots(client, dropbox_api.device_id())
+                rows = _all_snapshots(client, profile, dropbox_api.device_id())
         except Exception as exc:
             dropbox_api.log(traceback.format_exc())
             notice = (dropbox_api.failure_text(exc, "Could not load builds"), True)
@@ -493,16 +541,63 @@ def manage_builds():
                 dialog.close()
         if notice:
             dropbox_api.show_failure(notice[0])
-            return
+            return False
         if not rows:
             dropbox_api.notify("No saved builds")
-            return
-        index = xbmcgui.Dialog().select("Saved builds", [_describe(item) for item in rows])
+            return True
+        index = xbmcgui.Dialog().select(heading, [_describe(item) for item in rows])
         if index is None or index < 0:
-            return
+            return True
         try:
             if not _manage_one(rows[index]):
-                return
+                return False
         except Exception as exc:
             dropbox_api.log(traceback.format_exc())
             dropbox_api.show_failure(dropbox_api.failure_text(exc, "Could not update the saved builds"))
+            return False
+
+
+def browse_profiles():
+    if not dropbox_api.authorized():
+        dropbox_api.notify("Authorize Dropbox first", error=True)
+        return
+    while True:
+        dialog = None
+        notice = None
+        names = []
+        lines = []
+        try:
+            dialog = _busy("Loading profiles")
+            client = dropbox_api.get_client()
+            if client is None:
+                notice = ("Authorize Dropbox first", True)
+            else:
+                for name in dropbox_api.list_profile_names(client):
+                    devices = dropbox_api.list_profile_devices(client, name)
+                    device_count = len({device["device_id"] for device in devices})
+                    snapshots = 0
+                    for _folder, _legacy, manifest in _read_manifests(client, name):
+                        snapshots += len(_snapshot_records(manifest))
+                    names.append(name)
+                    lines.append("%s | %s | %s" % (
+                        name,
+                        _count_label(device_count, "device", "devices"),
+                        _count_label(snapshots, "snapshot", "snapshots"),
+                    ))
+        except Exception as exc:
+            dropbox_api.log(traceback.format_exc())
+            notice = (dropbox_api.failure_text(exc, "Could not load profiles"), True)
+        finally:
+            if dialog is not None:
+                dialog.close()
+        if notice:
+            dropbox_api.show_failure(notice[0])
+            return
+        if not lines:
+            dropbox_api.notify("No profiles")
+            return
+        index = xbmcgui.Dialog().select("Other profiles", lines)
+        if index is None or index < 0:
+            return
+        if manage_builds(names[index]) is False:
+            return

@@ -49,6 +49,8 @@ def failure_text(exc, fallback):
     lowered = text.lower()
     if "scope" in lowered or "not permitted" in lowered:
         return SCOPE_HELP
+    if isinstance(exc, ValueError) and str(exc):
+        return str(exc)
     detail = getattr(exc, "message", None)
     if detail:
         return detail
@@ -107,6 +109,11 @@ def setting_int(key, default):
 
 def device_name():
     return setting("device_name") or "This device"
+
+
+def profile_name():
+    from resources.lib.history import clean_profile
+    return clean_profile(setting("profile"))
 
 
 def _state_path():
@@ -328,14 +335,26 @@ def list_folder(client, path):
     return entries
 
 
-def list_device_folders(client):
-    from resources.lib.history import ROOT, valid_device
+def _folder_names(client, path):
     _, _, _, _, FolderMetadata, _ = _sdk()
-    folders = []
-    for entry in list_folder(client, ROOT):
-        if isinstance(entry, FolderMetadata) and valid_device(entry.name):
-            folders.append(entry.name)
-    return folders
+    names = []
+    for entry in list_folder(client, path):
+        if isinstance(entry, FolderMetadata):
+            names.append(entry.name)
+    return names
+
+
+def list_profile_devices(client, profile):
+    from resources.lib.history import DEFAULT_PROFILE, ROOT, clean_profile, profile_device_entries
+    profile = clean_profile(profile)
+    profile_folders = _folder_names(client, "%s/%s" % (ROOT, profile))
+    root_folders = _folder_names(client, ROOT) if profile == DEFAULT_PROFILE else []
+    return profile_device_entries(profile, profile_folders, root_folders)
+
+
+def list_profile_names(client):
+    from resources.lib.history import ROOT, classify_root_folders
+    return classify_root_folders(_folder_names(client, ROOT))
 
 
 def download_bytes(client, path):

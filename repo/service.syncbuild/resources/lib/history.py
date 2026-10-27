@@ -3,22 +3,80 @@ import re
 SNAPSHOT_ID = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z")
 DEVICE_ID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
 ROOT = "/SyncBuild"
+DEFAULT_PROFILE = "default"
 
 
 def valid_device(device_id):
     return bool(device_id and DEVICE_ID.fullmatch(device_id))
 
 
+def valid_profile(name):
+    text = (name or "").strip()
+    if not text or text in (".", "..") or valid_device(text):
+        return False
+    return "/" not in text and "\\" not in text
+
+
+def clean_profile(name):
+    text = (name or "").strip() or DEFAULT_PROFILE
+    if text in (".", "..") or "/" in text or "\\" in text:
+        raise ValueError("Profile name cannot contain slashes")
+    if valid_device(text):
+        raise ValueError("Profile name cannot be a device id")
+    return text
+
+
+def classify_root_folders(names):
+    profiles = []
+    legacy = False
+    for name in names or []:
+        if valid_device(name):
+            legacy = True
+        elif valid_profile(name) and name not in profiles:
+            profiles.append(name)
+    if legacy and DEFAULT_PROFILE not in profiles:
+        profiles.append(DEFAULT_PROFILE)
+    profiles.sort()
+    return profiles
+
+
+def profile_device_entries(profile, profile_folders, root_folders):
+    profile = clean_profile(profile)
+    devices = []
+    for name in profile_folders or []:
+        if valid_device(name):
+            devices.append({"device_id": name, "legacy": False})
+    if profile == DEFAULT_PROFILE:
+        for name in root_folders or []:
+            if valid_device(name):
+                devices.append({"device_id": name, "legacy": True})
+    return devices
+
+
+def profile_root(profile):
+    return "%s/%s" % (ROOT, clean_profile(profile))
+
+
+def device_folder(profile, device_id, legacy=False):
+    if not valid_device(device_id):
+        raise ValueError("Device is not valid")
+    if legacy:
+        if clean_profile(profile) != DEFAULT_PROFILE:
+            raise ValueError("Legacy builds belong to the default profile")
+        return "%s/%s" % (ROOT, device_id)
+    return "%s/%s" % (profile_root(profile), device_id)
+
+
 def valid_id(snapshot_id):
     return bool(snapshot_id and SNAPSHOT_ID.fullmatch(snapshot_id))
 
 
-def snapshot_path(device_id, snapshot_id):
-    return "%s/%s/%s.zip" % (ROOT, device_id, snapshot_id)
+def snapshot_path(profile, device_id, snapshot_id, legacy=False):
+    return "%s/%s.zip" % (device_folder(profile, device_id, legacy), snapshot_id)
 
 
-def manifest_path(device_id):
-    return "%s/%s/manifest.json" % (ROOT, device_id)
+def manifest_path(profile, device_id, legacy=False):
+    return "%s/manifest.json" % device_folder(profile, device_id, legacy)
 
 
 def display_time(snapshot_id):

@@ -9,6 +9,7 @@
     <setting id="dropbox_key" type="text" label="Dropbox app key" default=""/>
     <setting id="dropbox_secret" type="text" label="Dropbox app secret" default="" option="hidden"/>
     <setting id="device_name" type="text" label="Device name" default="PC"/>
+    <setting id="profile" type="text" label="Profile" default="default"/>
     <setting id="history" type="number" label="Snapshots to keep" default="3"/>
     <setting id="auto_check" type="bool" label="Automatic recheck" default="true"/>
   </category>
