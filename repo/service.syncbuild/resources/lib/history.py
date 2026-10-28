@@ -2,12 +2,17 @@ import re
 
 SNAPSHOT_ID = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z")
 DEVICE_ID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+SKIN_ID = re.compile(r"skin\.[A-Za-z0-9._-]+")
 ROOT = "/SyncBuild"
 DEFAULT_PROFILE = "default"
 
 
 def valid_device(device_id):
     return bool(device_id and DEVICE_ID.fullmatch(device_id))
+
+
+def valid_skin_id(skin_id):
+    return bool(skin_id and SKIN_ID.fullmatch(skin_id))
 
 
 def valid_profile(name):
@@ -57,13 +62,17 @@ def profile_root(profile):
     return "%s/%s" % (ROOT, clean_profile(profile))
 
 
-def device_folder(profile, device_id, legacy=False):
+def device_folder(profile, device_id, legacy=False, skin_id=None):
     if not valid_device(device_id):
         raise ValueError("Device is not valid")
     if legacy:
         if clean_profile(profile) != DEFAULT_PROFILE:
             raise ValueError("Legacy builds belong to the default profile")
         return "%s/%s" % (ROOT, device_id)
+    if skin_id:
+        if not valid_skin_id(skin_id):
+            raise ValueError("Skin is not valid")
+        return "%s/%s/%s" % (profile_root(profile), skin_id, device_id)
     return "%s/%s" % (profile_root(profile), device_id)
 
 
@@ -71,12 +80,12 @@ def valid_id(snapshot_id):
     return bool(snapshot_id and SNAPSHOT_ID.fullmatch(snapshot_id))
 
 
-def snapshot_path(profile, device_id, snapshot_id, legacy=False):
-    return "%s/%s.zip" % (device_folder(profile, device_id, legacy), snapshot_id)
+def snapshot_path(profile, device_id, snapshot_id, legacy=False, skin_id=None):
+    return "%s/%s.zip" % (device_folder(profile, device_id, legacy, skin_id), snapshot_id)
 
 
-def manifest_path(profile, device_id, legacy=False):
-    return "%s/manifest.json" % device_folder(profile, device_id, legacy)
+def manifest_path(profile, device_id, legacy=False, skin_id=None):
+    return "%s/manifest.json" % device_folder(profile, device_id, legacy, skin_id)
 
 
 def display_time(snapshot_id):
@@ -87,14 +96,16 @@ def display_time(snapshot_id):
     return "%s %s:%s UTC" % (day, hour, minute)
 
 
-def choose_newer(found, local_id, last_marker):
+def choose_newer(found, local_id, last_marker, ignored=None):
     baseline = last_marker or ""
+    skipped = set(ignored or [])
     chosen = [
         item for item in found
         if valid_device(item.get("device_id"))
         and item.get("device_id") != local_id
         and valid_id(item.get("id"))
         and item["id"] > baseline
+        and item["id"] not in skipped
     ]
     chosen.sort(key=lambda item: item["id"], reverse=True)
     return chosen

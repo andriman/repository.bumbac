@@ -124,7 +124,7 @@ def _profile():
 def _history():
     xbmcgui.Dialog().ok(
         "SyncBuild",
-        "This is how many unmarked builds each device keeps. Builds marked with * stay as well and do not count toward this number.",
+        "This is how many unmarked builds each device keeps for one skin. Builds marked with * stay as well and do not count toward this number.",
     )
     entered = xbmcgui.Dialog().input(
         "Snapshots to keep",

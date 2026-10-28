@@ -157,6 +157,30 @@ def set_last_marker(snapshot_id):
     save_state(state)
 
 
+def ignored_ids():
+    from resources.lib.history import valid_id
+    stored = load_state().get("ignored") or []
+    if not isinstance(stored, list):
+        return []
+    return [item for item in stored if valid_id(item)]
+
+
+def ignore_snapshots(snapshot_ids):
+    from resources.lib.history import valid_id
+    state = load_state()
+    current = state.get("ignored")
+    if not isinstance(current, list):
+        current = []
+    seen = {item for item in current if valid_id(item)}
+    current = [item for item in current if item in seen]
+    for snapshot_id in snapshot_ids or []:
+        if valid_id(snapshot_id) and snapshot_id not in seen:
+            current.append(snapshot_id)
+            seen.add(snapshot_id)
+    state["ignored"] = current
+    save_state(state)
+
+
 def wizard_status():
     return load_state().get("wizard") or ""
 
@@ -365,6 +389,41 @@ def list_profile_devices(client, profile):
     profile_folders = _folder_names(client, "%s/%s" % (ROOT, profile))
     root_folders = _folder_names(client, ROOT) if profile == DEFAULT_PROFILE else []
     return profile_device_entries(profile, profile_folders, root_folders)
+
+
+def list_skin_folders(client, profile):
+    from resources.lib.history import profile_root, valid_skin_id
+    names = []
+    for name in _folder_names(client, profile_root(profile)):
+        if valid_skin_id(name) and name not in names:
+            names.append(name)
+    return names
+
+
+def list_legacy_devices(client, profile):
+    from resources.lib.history import DEFAULT_PROFILE, ROOT, clean_profile, profile_root, valid_device
+    profile = clean_profile(profile)
+    devices = []
+    for name in _folder_names(client, profile_root(profile)):
+        if valid_device(name):
+            devices.append({"device_id": name, "place": "profile"})
+    if profile == DEFAULT_PROFILE:
+        for name in _folder_names(client, ROOT):
+            if valid_device(name):
+                devices.append({"device_id": name, "place": "root"})
+    return devices
+
+
+def list_skin_devices(client, profile, skin_id):
+    from resources.lib.history import profile_root, valid_device, valid_skin_id
+    if not valid_skin_id(skin_id):
+        raise ValueError("Skin is not valid")
+    devices = []
+    for name in _folder_names(client, "%s/%s" % (profile_root(profile), skin_id)):
+        if valid_device(name):
+            devices.append({"device_id": name, "place": "skin"})
+    devices.extend(list_legacy_devices(client, profile))
+    return devices
 
 
 def list_profile_names(client):
