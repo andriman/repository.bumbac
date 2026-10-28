@@ -18,6 +18,8 @@ if __name__ == "__main__":
     if ready:
         try:
             from resources.lib.sync import startup_check
-            startup_check(monitor)
+            from resources.lib.wizard import offer_wizard
+            if not offer_wizard():
+                startup_check(monitor)
         except Exception:
             xbmc.log("[SyncBuild] startup failed:\n%s" % traceback.format_exc(), xbmc.LOGERROR)

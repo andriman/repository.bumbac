@@ -132,10 +132,11 @@
 		<description lang="cs_CZ">Vyhledávání a stahování českých a slovenských titulků z Titulky.com.</description>
 		<description lang="sk_SK">Vyhľadávanie a sťahovanie českých a slovenských titulkov z Titulky.com.</description>
 	</extension>
-</addon><addon id="service.syncbuild" name="SyncBuild" version="1.0.3" provider-name="SyncBuild">
+</addon><addon id="service.syncbuild" name="SyncBuild" version="1.0.4" provider-name="SyncBuild">
   <requires>
     <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.dropbox" version="10.3.1" />
+    <import addon="script.module.qrcode" version="6.1.0" />
   </requires>
   <extension point="xbmc.python.script" library="default.py">
     <provides>executable</provides>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <defaultcontrol always="true">10</defaultcontrol>
+    <controls>
+        <control type="image">
+            <posx>0</posx>
+            <posy>0</posy>
+            <width>1920</width>
+            <height>1080</height>
+            <texture colordiffuse="C0000000">white.png</texture>
+            <aspectratio>stretch</aspectratio>
+        </control>
+        <control type="image">
+            <posx>460</posx>
+            <posy>90</posy>
+            <width>1000</width>
+            <height>900</height>
+            <texture colordiffuse="FF1B1B1B">white.png</texture>
+            <aspectratio>stretch</aspectratio>
+        </control>
+        <control type="image" id="200">
+            <posx>700</posx>
+            <posy>130</posy>
+            <width>520</width>
+            <height>520</height>
+            <aspectratio>keep</aspectratio>
+        </control>
+        <control type="textbox" id="201">
+            <posx>500</posx>
+            <posy>670</posy>
+            <width>920</width>
+            <height>200</height>
+            <font>font13</font>
+            <textcolor>FFFFFFFF</textcolor>
+        </control>
+        <control type="button" id="10">
+            <posx>760</posx>
+            <posy>890</posy>
+            <width>400</width>
+            <height>60</height>
+            <label>OK</label>
+            <font>font13</font>
+            <align>center</align>
+            <textcolor>FFFFFFFF</textcolor>
+            <focusedcolor>FF000000</focusedcolor>
+            <texturefocus colordiffuse="FFFFFFFF">white.png</texturefocus>
+            <texturenofocus colordiffuse="FF333333">white.png</texturenofocus>
+            <onclick>Close</onclick>
+        </control>
+    </controls>
+</window>

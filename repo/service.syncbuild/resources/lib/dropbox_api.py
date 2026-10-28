@@ -157,6 +157,20 @@ def set_last_marker(snapshot_id):
     save_state(state)
 
 
+def wizard_status():
+    return load_state().get("wizard") or ""
+
+
+def set_wizard_status(status):
+    state = load_state()
+    state["wizard"] = status
+    save_state(state)
+
+
+def set_setting(key, value):
+    addon().setSetting(key, value)
+
+
 def _token_path():
     return os.path.join(data_dir(), TOKEN_FILE)
 
@@ -288,9 +302,10 @@ def authorize():
     )
     url = flow.start()
     log("Authorize URL: %s" % url)
-    xbmcgui.Dialog().textviewer(
-        "Authorize Dropbox",
-        "Open this address, allow SyncBuild, then paste the code on the next screen.\n\n%s" % url,
+    from resources.lib.qrview import show_qr
+    show_qr(
+        url,
+        "Open this address, allow SyncBuild, then press OK and paste the code.\n\n%s" % url,
     )
     code = xbmcgui.Dialog().input("Paste the Dropbox code")
     code = (code or "").strip()

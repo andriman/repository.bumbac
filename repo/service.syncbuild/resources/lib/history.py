@@ -100,17 +100,39 @@ def choose_newer(found, local_id, last_marker):
     return chosen
 
 
-def kept_snapshot_ids(existing_ids, new_id, keep):
-    if not valid_id(new_id):
-        raise ValueError("Snapshot time is not valid")
+def clamp_keep(keep):
     try:
         keep = int(keep)
     except (TypeError, ValueError):
         keep = 3
-    keep = min(50, max(1, keep))
-    others = sorted(
-        {snapshot_id for snapshot_id in (existing_ids or []) if valid_id(snapshot_id) and snapshot_id != new_id},
-        reverse=True,
-    )
-    kept = sorted([new_id] + others[:keep - 1], reverse=True)
-    return kept, others[keep - 1:]
+    return min(50, max(1, keep))
+
+
+def kept_snapshot_ids(existing, new_id, keep):
+    if not valid_id(new_id):
+        raise ValueError("Snapshot time is not valid")
+    keep = clamp_keep(keep)
+    starred = []
+    plain = []
+    seen = set()
+    for item in existing or []:
+        if isinstance(item, dict):
+            snapshot_id = item.get("id")
+            is_starred = bool(item.get("starred"))
+        else:
+            snapshot_id = item
+            is_starred = False
+        if not valid_id(snapshot_id) or snapshot_id == new_id or snapshot_id in seen:
+            continue
+        seen.add(snapshot_id)
+        if is_starred:
+            starred.append(snapshot_id)
+        else:
+            plain.append(snapshot_id)
+    starred.sort(reverse=True)
+    plain.sort(reverse=True)
+    kept_ids = set(starred)
+    kept_ids.add(new_id)
+    kept_ids.update(plain[:keep - 1])
+    removed = plain[keep - 1:]
+    return sorted(kept_ids, reverse=True), removed

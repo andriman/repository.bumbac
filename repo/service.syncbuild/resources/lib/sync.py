@@ -61,11 +61,14 @@ def _snapshot_records(manifest):
         if not isinstance(snapshot, dict) or not valid_id(snapshot.get("id")):
             continue
         skin_id, skin_name = _skin_fields(snapshot)
-        records.append({
+        record = {
             "id": snapshot["id"],
             "skin_id": skin_id,
             "skin_name": skin_name,
-        })
+        }
+        if snapshot.get("starred") is True:
+            record["starred"] = True
+        records.append(record)
     return records
 
 
@@ -76,6 +79,8 @@ def _describe(item):
         display_time(item["id"]),
         item["device_id"],
     )
+    if item.get("starred"):
+        line = "* " + line
     if item.get("local"):
         line += " (this device)"
     return line
@@ -270,15 +275,18 @@ def upload_current():
                         manifest = {}
                     existing = _snapshot_records(manifest if isinstance(manifest, dict) else {})
                     by_id = {record["id"]: record for record in existing}
-                    kept, removed = kept_snapshot_ids(list(by_id), snapshot_id, dropbox_api.setting_int("history", 3))
+                    kept, removed = kept_snapshot_ids(existing, snapshot_id, dropbox_api.setting_int("history", 3))
                     records = []
                     for kept_id in kept:
                         if kept_id == snapshot_id:
-                            records.append({
+                            record = {
                                 "id": snapshot_id,
                                 "skin_id": skin_id,
                                 "skin_name": skin_name,
-                            })
+                            }
+                            if by_id.get(snapshot_id, {}).get("starred"):
+                                record["starred"] = True
+                            records.append(record)
                         else:
                             records.append(by_id[kept_id])
                     dropbox_api.upload_json(client, manifest_path(profile, local_id), {
@@ -346,6 +354,7 @@ def _all_snapshots(client, profile, local_id):
                 "path": snapshot_path(profile, folder, snapshot["id"], legacy),
                 "skin_id": snapshot["skin_id"],
                 "skin_name": snapshot["skin_name"],
+                "starred": bool(snapshot.get("starred")),
                 "local": folder == local_id,
                 "profile": profile,
                 "legacy": legacy,
@@ -476,9 +485,73 @@ def _delete_device(item):
             dialog.close()
 
 
-def _manage_one(item):
+def _confirm_star_delete(items):
+    if len(items) == 1:
+        item = items[0]
+        message = "Do you really want to delete * %s?\n%s\n%s\n%s" % (
+            item.get("skin_name") or LEGACY_SKIN_NAME,
+            item.get("name") or "",
+            item.get("device_id") or "",
+            display_time(item["id"]),
+        )
+    else:
+        lines = ["Do you really want to delete * builds?"]
+        for item in items:
+            lines.append("%s | %s | %s" % (
+                item.get("name") or item.get("device_id") or "",
+                item.get("skin_name") or LEGACY_SKIN_NAME,
+                display_time(item["id"]),
+            ))
+        message = "\n".join(lines)
+    return xbmcgui.Dialog().yesno("Saved builds", message)
+
+
+def _set_star(item, starred):
+    if not valid_device(item.get("device_id")) or not valid_id(item.get("id")):
+        raise ValueError("Snapshot is not valid")
+    profile, legacy = _item_location(item)
+    dialog = None
+    try:
+        dialog = _busy("Saving")
+        client = dropbox_api.get_client()
+        if client is None:
+            raise RuntimeError("Authorize Dropbox first")
+        try:
+            manifest = dropbox_api.download_json(client, manifest_path(profile, item["device_id"], legacy))
+        except Exception as exc:
+            if "not_found" not in str(exc):
+                raise
+            manifest = {}
+        if not isinstance(manifest, dict):
+            manifest = {}
+        snapshots = manifest.get("snapshots")
+        if not isinstance(snapshots, list):
+            raise ValueError("Snapshot was not found")
+        updated = False
+        for snapshot in snapshots:
+            if isinstance(snapshot, dict) and snapshot.get("id") == item["id"]:
+                if starred:
+                    snapshot["starred"] = True
+                else:
+                    snapshot.pop("starred", None)
+                updated = True
+        if not updated:
+            raise ValueError("Snapshot was not found")
+        dropbox_api.upload_json(client, manifest_path(profile, item["device_id"], legacy), {
+            "device_id": item["device_id"],
+            "device_name": manifest.get("device_name") or item.get("name") or item["device_id"],
+            "snapshots": snapshots,
+        })
+    finally:
+        if dialog is not None:
+            dialog.close()
+
+
+def _manage_one(item, rows):
+    star_label = "Remove *" if item.get("starred") else "Mark with *"
     choice = xbmcgui.Dialog().select(_describe(item), [
         "Reset this device to this build",
+        star_label,
         "Delete this snapshot",
         "Delete all snapshots for this device",
     ])
@@ -490,6 +563,10 @@ def _manage_one(item):
             return True
         return not _restore_saved(item, parts)
     if choice == 1:
+        _set_star(item, not item.get("starred"))
+        dropbox_api.notify("Star removed" if item.get("starred") else "Build marked")
+        return True
+    if choice == 2:
         message = "Delete this snapshot?\n%s\n%s\n%s" % (
             item["name"],
             item["device_id"],
@@ -497,11 +574,19 @@ def _manage_one(item):
         )
         if not xbmcgui.Dialog().yesno("Saved builds", message):
             return True
+        if item.get("starred") and not _confirm_star_delete([item]):
+            return True
         _delete_snapshot(item)
         dropbox_api.notify("Snapshot deleted")
         return True
     message = "Delete every snapshot for this device?\n%s\n%s" % (item["name"], item["device_id"])
     if not xbmcgui.Dialog().yesno("Saved builds", message):
+        return True
+    starred = [
+        row for row in rows
+        if row.get("device_id") == item.get("device_id") and row.get("starred")
+    ]
+    if starred and not _confirm_star_delete(starred):
         return True
     _delete_device(item)
     dropbox_api.notify("Snapshots deleted")
@@ -549,7 +634,7 @@ def manage_builds(profile=None):
         if index is None or index < 0:
             return True
         try:
-            if not _manage_one(rows[index]):
+            if not _manage_one(rows[index], rows):
                 return False
         except Exception as exc:
             dropbox_api.log(traceback.format_exc())
