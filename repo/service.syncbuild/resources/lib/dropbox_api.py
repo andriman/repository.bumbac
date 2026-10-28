@@ -157,6 +157,30 @@ def set_last_marker(snapshot_id):
     save_state(state)
 
 
+def ignored_ids():
+    from resources.lib.history import valid_id
+    stored = load_state().get("ignored") or []
+    if not isinstance(stored, list):
+        return []
+    return [item for item in stored if valid_id(item)]
+
+
+def ignore_snapshots(snapshot_ids):
+    from resources.lib.history import valid_id
+    state = load_state()
+    current = state.get("ignored")
+    if not isinstance(current, list):
+        current = []
+    seen = {item for item in current if valid_id(item)}
+    current = [item for item in current if item in seen]
+    for snapshot_id in snapshot_ids or []:
+        if valid_id(snapshot_id) and snapshot_id not in seen:
+            current.append(snapshot_id)
+            seen.add(snapshot_id)
+    state["ignored"] = current
+    save_state(state)
+
+
 def wizard_status():
     return load_state().get("wizard") or ""
 

@@ -87,14 +87,16 @@ def display_time(snapshot_id):
     return "%s %s:%s UTC" % (day, hour, minute)
 
 
-def choose_newer(found, local_id, last_marker):
+def choose_newer(found, local_id, last_marker, ignored=None):
     baseline = last_marker or ""
+    skipped = set(ignored or [])
     chosen = [
         item for item in found
         if valid_device(item.get("device_id"))
         and item.get("device_id") != local_id
         and valid_id(item.get("id"))
         and item["id"] > baseline
+        and item["id"] not in skipped
     ]
     chosen.sort(key=lambda item: item["id"], reverse=True)
     return chosen

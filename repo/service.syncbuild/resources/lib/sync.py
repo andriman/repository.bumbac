@@ -139,7 +139,12 @@ def _remote_builds(client, profile, local_id):
         current = newest.get(item["device_id"])
         if current is None or item["id"] > current["id"]:
             newest[item["device_id"]] = item
-    return choose_newer(list(newest.values()), local_id, dropbox_api.last_marker())
+    return choose_newer(
+        list(newest.values()),
+        local_id,
+        dropbox_api.last_marker(),
+        dropbox_api.ignored_ids(),
+    )
 
 
 def _apply(client, chosen, parts):
@@ -157,10 +162,35 @@ def _apply(client, chosen, parts):
     return chosen["name"]
 
 
-def _prompt(candidates, monitor=None):
+def _startup_choice(index, candidates):
+    if index is None or index < 0:
+        return None
+    if index < len(candidates):
+        return candidates[index]
+    if index == len(candidates):
+        return ("ignore", [item["id"] for item in candidates])
+    return ("disable", None)
+
+
+def _prompt(candidates, monitor=None, automatic=False):
     if monitor is not None and monitor.abortRequested():
         return None
-    if len(candidates) == 1:
+    if automatic and len(candidates) == 1:
+        item = candidates[0]
+        index = xbmcgui.Dialog().select("Newer build", [
+            "Reset to this build: %s" % _describe(item),
+            "Not now",
+            "Ignore this build",
+            "Turn off automatic checks",
+        ])
+        if index == 0:
+            return item
+        if index == 2:
+            return ("ignore", [item["id"]])
+        if index == 3:
+            return ("disable", None)
+        return None
+    if not automatic and len(candidates) == 1:
         item = candidates[0]
         message = "%s\n%s\n%s\n%s\nReset this device to that build?" % (
             item["name"],
@@ -171,10 +201,15 @@ def _prompt(candidates, monitor=None):
         if xbmcgui.Dialog().yesno("Newer build", message):
             return item
         return None
-    index = xbmcgui.Dialog().select("Newer builds", [_describe(item) for item in candidates])
-    if index is None or index < 0:
-        return None
-    return candidates[index]
+    labels = [_describe(item) for item in candidates]
+    if automatic:
+        labels.extend(["Ignore these builds", "Turn off automatic checks"])
+    index = xbmcgui.Dialog().select("Newer builds", labels)
+    if not automatic:
+        if index is None or index < 0:
+            return None
+        return candidates[index]
+    return _startup_choice(index, candidates)
 
 
 def check_newer(interactive, automatic=False, monitor=None):
@@ -209,8 +244,20 @@ def check_newer(interactive, automatic=False, monitor=None):
         if interactive and not automatic:
             dropbox_api.notify("This device is up to date")
         return
-    chosen = _prompt(candidates, monitor)
+    chosen = _prompt(candidates, monitor, automatic=automatic)
     if chosen is None:
+        return
+    if isinstance(chosen, tuple):
+        action, snapshot_ids = chosen
+        if action == "ignore":
+            dropbox_api.ignore_snapshots(snapshot_ids)
+            if len(snapshot_ids) == 1:
+                dropbox_api.notify("This build will not be offered again")
+            else:
+                dropbox_api.notify("These builds will not be offered again")
+        elif action == "disable":
+            dropbox_api.set_setting("auto_check", "false")
+            dropbox_api.notify("Automatic checks are off")
         return
     parts = choose_parts(chosen.get("skin_name"))
     if not parts:
